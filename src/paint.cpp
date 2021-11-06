@@ -51,11 +51,7 @@ void CaptureWin::initializeGL()
 		std::exit(EXIT_FAILURE);
 	}
 
-	QColor bg = QWidget::palette().color(QWidget::backgroundRole());
-	glClearColor(bg.red() / 255.0f,
-		     bg.green() / 255.0f,
-		     bg.blue() / 255.0f,
-		     0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	checkError("InitializeGL Part 2");
 	m_program = new QOpenGLShaderProgram(this);
