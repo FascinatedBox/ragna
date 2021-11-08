@@ -121,6 +121,8 @@ private slots:
 
 private:
 	void resizeEvent(QResizeEvent *event);
+	void focusInEvent(QFocusEvent *event);
+	void focusOutEvent(QFocusEvent *event);
 	void paintGL();
 	void initializeGL();
 	void resizeGL(int w, int h);

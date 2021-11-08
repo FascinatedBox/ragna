@@ -339,6 +339,16 @@ void CaptureWin::resizeEvent(QResizeEvent *event)
 	QOpenGLWidget::resizeEvent(event);
 }
 
+void CaptureWin::focusInEvent(QFocusEvent *event)
+{
+	event->ignore();
+}
+
+void CaptureWin::focusOutEvent(QFocusEvent *event)
+{
+	event->ignore();
+}
+
 void CaptureWin::updateShader()
 {
 	setV4LFormat(m_v4l_fmt);
