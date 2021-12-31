@@ -22,7 +22,7 @@
 
 static void usage()
 {
-	printf("Usage: qvidcap <options>\n\n"
+	printf("Usage: ragna <options>\n\n"
 	       "Options:\n\n"
 	       "  -d, --device=<dev>       use device <dev> as the video device\n"
 	       "                           if <dev> is a number, then /dev/video<dev> is used\n"
@@ -473,7 +473,7 @@ int main(int argc, char **argv)
 	bool force_opengl = false;
 	bool force_opengles = false;
 
-	disp.setApplicationDisplayName("V4L2 Viewer");
+	disp.setApplicationDisplayName("Ragna Viewer");
 	QStringList args = disp.arguments();
 	for (int i = 1; i < args.size(); i++) {
 		QString s;
