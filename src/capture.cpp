@@ -8,21 +8,11 @@
  * Copyright 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  */
 
-#include "capture.h"
-
-#include <QtCore/QTextStream>
-#include <QtCore/QCoreApplication>
-#include <QtGui/QOpenGLContext>
-#include <QtGui/QOpenGLPaintDevice>
-#include <QtGui/QContextMenuEvent>
-#include <QtGui/QKeyEvent>
-#include <QtGui/QPainter>
-#include <QtCore/QSocketNotifier>
-#include <QtMath>
-#include <QTimer>
 #include <QApplication>
+#include <QSocketNotifier>
+#include <QtMath>
 
-#include <netinet/in.h>
+#include "capture.h"
 #include "v4l2-info.h"
 
 const __u32 formats[] = {

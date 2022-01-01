@@ -5,18 +5,8 @@
  * Copyright 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  */
 
-#include <sys/types.h>
-
 #include <QApplication>
-#include <QScrollArea>
-#include <QtMath>
-#include <libv4l2.h>
-
-#include "cv4l-helpers.h"
 #include "capture.h"
-
-#include <libv4lconvert.h>
-#include "v4l-stream.h"
 #include "v4l2-info.h"
 
 static void usage()

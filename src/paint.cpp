@@ -9,19 +9,6 @@
  */
 
 #include "capture.h"
-
-#include <QtCore/QTextStream>
-#include <QtCore/QCoreApplication>
-#include <QtGui/QOpenGLContext>
-#include <QtGui/QOpenGLPaintDevice>
-#include <QtGui/QContextMenuEvent>
-#include <QtGui/QKeyEvent>
-#include <QtGui/QPainter>
-#include <QtCore/QSocketNotifier>
-#include <QtMath>
-#include <QTimer>
-#include <QApplication>
-
 #include "v4l2-info.h"
 
 void CaptureWin::initializeGL()

@@ -9,21 +9,14 @@
 #define GL_GLEXT_PROTOTYPES 1
 #define QT_NO_OPENGL_ES_2
 
-#include <QOpenGLWidget>
-#include <QOpenGLFunctions>
-#include <QFile>
+#include <QKeyEvent>
 #include <QMenu>
-#include <QAction>
-#include <QActionGroup>
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLWidget>
 #include <QScrollArea>
-#include <QtGui/QOpenGLShaderProgram>
-#include <libv4l2.h>
 
 #include "cv4l-helpers.h"
-
-extern "C" {
-#include "v4l-stream.h"
-}
 
 extern const __u32 formats[];
 extern const __u32 colorspaces[];
