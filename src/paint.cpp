@@ -64,21 +64,19 @@ void CaptureWin::paintGL()
 	if (m_v4l_fmt.g_width() < 16 || m_v4l_fmt.g_frame_height() < 16)
 		return;
 
-	if (m_mode == AppModeV4L2) {
-		if (m_v4l_queue == NULL || m_nextIndex == -1)
-			return;
+	if (m_v4l_queue == NULL || m_nextIndex == -1)
+		return;
 
-		cv4l_buffer buf(*m_v4l_queue, m_curIndex);
+	cv4l_buffer buf(*m_v4l_queue, m_curIndex);
 
-		m_fd->qbuf(buf);
-		for (unsigned i = 0; i < m_v4l_queue->g_num_planes(); i++) {
-			m_curData[i] = m_nextData[i];
-			m_curSize[i] = m_nextSize[i];
-			m_curIndex = m_nextIndex;
-			m_nextIndex = -1;
-			m_nextData[i] = 0;
-			m_nextSize[i] = 0;
-		}
+	m_fd->qbuf(buf);
+	for (unsigned i = 0; i < m_v4l_queue->g_num_planes(); i++) {
+		m_curData[i] = m_nextData[i];
+		m_curSize[i] = m_nextSize[i];
+		m_curIndex = m_nextIndex;
+		m_nextIndex = -1;
+		m_nextData[i] = 0;
+		m_nextSize[i] = 0;
 	}
 
 
@@ -230,7 +228,7 @@ void CaptureWin::paintGL()
 	static unsigned long long tot_t;
 	static unsigned cnt;
 	GLuint query;
-	QSize s = correctAspect(m_viewSize);
+	QSize s = m_viewSize;
 	bool scale = m_scrollArea->widgetResizable();
 
 	glViewport(scale ? (size().width() - s.width()) / 2 : 0,

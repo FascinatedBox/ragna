@@ -17,16 +17,15 @@
 #include <QActionGroup>
 #include <QScrollArea>
 #include <QtGui/QOpenGLShaderProgram>
+#include <libv4l2.h>
 
-#include "ragna.h"
+#include "cv4l-helpers.h"
 
 extern "C" {
-#include "v4l2-tpg.h"
 #include "v4l-stream.h"
 }
 
 extern const __u32 formats[];
-extern const __u32 fields[];
 extern const __u32 colorspaces[];
 extern const __u32 xfer_funcs[];
 extern const __u32 ycbcr_encs[];
@@ -34,32 +33,6 @@ extern const __u32 hsv_encs[];
 extern const __u32 quantizations[];
 
 class QOpenGLPaintDevice;
-
-enum AppMode {
-	AppModeV4L2,
-	AppModeFile,
-	AppModeSocket,
-	AppModeTPG,
-	AppModeTest
-};
-
-#define FMT_MASK		(1 << 0)
-#define FIELD_MASK		(1 << 1)
-#define COLORSPACE_MASK		(1 << 2)
-#define XFER_FUNC_MASK		(1 << 3)
-#define YCBCR_HSV_ENC_MASK	(1 << 4)
-#define QUANT_MASK		(1 << 5)
-
-struct TestState {
-	unsigned fmt_idx;
-	unsigned field_idx;
-	unsigned colorspace_idx;
-	unsigned xfer_func_idx;
-	unsigned ycbcr_enc_idx;
-	unsigned hsv_enc_idx;
-	unsigned quant_idx;
-	unsigned mask;
-};
 
 // This must be equal to the max number of textures that any shader uses
 #define MAX_TEXTURES_NEEDED 3
@@ -72,51 +45,30 @@ public:
 	~CaptureWin();
 
 	void setModeV4L2(cv4l_fd *fd);
-	void setModeSocket(int sock, int port);
-	void setModeFile(const QString &filename);
-	void setModeTPG();
-	void setModeTest(unsigned cnt);
 	void setQueue(cv4l_queue *q);
 	bool setV4LFormat(cv4l_fmt &fmt);
-	void setPixelAspect(const v4l2_fract &pixelaspect);
 	bool updateV4LFormat(const cv4l_fmt &fmt);
-	void setOverrideWidth(__u32 w);
-	void setOverrideHeight(__u32 h);
-	void setOverrideHorPadding(__u32 p);
-	void setCount(unsigned cnt) { m_cnt = cnt; }
 	void setReportTimings(bool report) { m_reportTimings = report; }
 	void setVerbose(bool verbose) { m_verbose = verbose; }
 	void setOverridePixelFormat(__u32 fmt) { m_overridePixelFormat = fmt; }
-	void setOverrideField(__u32 field) { m_overrideField = field; }
 	void setOverrideColorspace(__u32 colsp) { m_overrideColorspace = colsp; }
 	void setOverrideYCbCrEnc(__u32 ycbcr) { m_overrideYCbCrEnc = ycbcr; }
 	void setOverrideHSVEnc(__u32 hsv) { m_overrideHSVEnc = hsv; }
 	void setOverrideXferFunc(__u32 xfer_func) { m_overrideXferFunc = xfer_func; }
 	void setOverrideQuantization(__u32 quant) { m_overrideQuantization = quant; }
-	void setFps(double fps) { m_fps = fps; }
-	void setSingleStepStart(unsigned start) { m_singleStep = true; m_singleStepStart = start; }
-	void setTestState(const TestState &state) { m_testState = state; }
-	QSize correctAspect(const QSize &s) const;
-	void startTimer();
-	struct tpg_data *getTPG() { return &m_tpg; }
 
 private slots:
 	void v4l2ReadEvent();
 	void v4l2ExceptionEvent();
-	void sockReadEvent();
-	void tpgUpdateFrame();
 
 	void restoreAll(bool checked);
 	void restoreSize(bool checked = false);
 	void fmtChanged(QAction *a);
-	void fieldChanged(QAction *a);
 	void colorspaceChanged(QAction *a);
 	void xferFuncChanged(QAction *a);
 	void ycbcrEncChanged(QAction *a);
 	void hsvEncChanged(QAction *a);
 	void quantChanged(QAction *a);
-	void windowScalingChanged(QAction *a);
-	void resolutionOverrideChanged(bool);
 	void toggleFullScreen(bool b = false);
 
 private:
@@ -125,12 +77,9 @@ private:
 	void focusOutEvent(QFocusEvent *event);
 	void paintGL();
 	void initializeGL();
-	void resizeGL(int w, int h);
 	void contextMenuEvent(QContextMenuEvent *event);
 	void keyPressEvent(QKeyEvent *event);
 	void mouseDoubleClickEvent(QMouseEvent * e);
-	void listenForNewConnection();
-	int read_u32(__u32 &v);
 	void showCurrentOverrides();
 	void cycleMenu(__u32 &overrideVal, __u32 origVal,
 		       const __u32 values[], bool hasShift, bool hasCtrl);
@@ -138,7 +87,6 @@ private:
 	bool supportedFmt(__u32 fmt);
 	void checkError(const char *msg);
 	void configureTexture(size_t idx);
-	void initImageFormat();
 	void updateOrigValues();
 	void updateShader();
 	void changeShader();
@@ -163,20 +111,9 @@ private:
 	void render_NV16(__u32 format);
 	void render_NV24(__u32 format);
 
-	enum AppMode m_mode;
 	cv4l_fd *m_fd;
-	int m_sock;
-	int m_port;
-	QFile m_file;
-	bool m_v4l2;
 	cv4l_fmt m_v4l_fmt;
-	v4l2_fract m_pixelaspect;
 	cv4l_queue *m_v4l_queue;
-	unsigned m_cnt;
-	unsigned m_frame;
-	unsigned m_test;
-	TestState m_testState;
-	unsigned m_imageSize;
 	bool m_verbose;
 	bool m_reportTimings;
 	bool m_is_sdtv;
@@ -189,14 +126,8 @@ private:
 	bool m_haveSwapBytes;
 	bool m_updateShader;
 	QSize m_viewSize;
-	bool m_canOverrideResolution;
-	codec_ctx *m_ctx;
 
 	__u32 m_overridePixelFormat;
-	__u32 m_overrideWidth;
-	__u32 m_overrideHeight;
-	__u32 m_overrideHorPadding;
-	__u32 m_overrideField;
 	__u32 m_overrideColorspace;
 	__u32 m_overrideYCbCrEnc;
 	__u32 m_overrideHSVEnc;
@@ -211,12 +142,7 @@ private:
 	__u32 m_origHSVEnc;
 	__u32 m_origXferFunc;
 	__u32 m_origQuantization;
-	double m_fps;
-	bool m_singleStep;
-	unsigned m_singleStepStart;
-	bool m_singleStepNext;
 
-	QTimer *m_timer;
 	int m_screenTextureCount;
 	GLuint m_screenTexture[MAX_TEXTURES_NEEDED];
 	QOpenGLShaderProgram *m_program;
@@ -226,7 +152,6 @@ private:
 	unsigned m_nextSize[MAX_TEXTURES_NEEDED];
 	int m_curIndex;
 	int m_nextIndex;
-	struct tpg_data m_tpg;
 
 	QScrollArea *m_scrollArea;
 	QAction *m_resolutionOverride;
@@ -239,7 +164,6 @@ private:
 	QMenu *m_ycbcrEncMenu;
 	QMenu *m_hsvEncMenu;
 	QMenu *m_quantMenu;
-	QMenu *m_displayMenu;
 };
 
 #endif

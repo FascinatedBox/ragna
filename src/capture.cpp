@@ -181,11 +181,6 @@ const __u32 quantizations[] = {
 	0
 };
 
-enum {
-	CAPTURE_GL_WIN_RESIZE,
-	CAPTURE_GL_WIN_SCROLLBAR,
-};
-
 static void checkSubMenuItem(QMenu *menu, __u32 value)
 {
 	QList<QAction *> actions = menu->actions();
@@ -210,15 +205,8 @@ static QAction *addSubMenuItem(QActionGroup *grp, QMenu *menu, const QString &te
 CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 	QOpenGLWidget(parent),
 	m_fd(0),
-	m_sock(0),
 	m_v4l_queue(0),
-	m_frame(0),
-	m_ctx(0),
 	m_origPixelFormat(0),
-	m_fps(0),
-	m_singleStep(false),
-	m_singleStepStart(0),
-	m_singleStepNext(false),
 	m_screenTextureCount(0),
 	m_program(0),
 	m_curIndex(-1),
@@ -227,9 +215,6 @@ CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 {
 	m_curSize[0] = 0;
 	m_curData[0] = 0;
-	m_canOverrideResolution = false;
-	m_pixelaspect.numerator = 1;
-	m_pixelaspect.denominator = 1;
 	QMenu *menu = new QMenu("Override Pixel Format (P)");
 	m_fmtMenu = menu;
 	QActionGroup *grp = new QActionGroup(menu);
@@ -240,15 +225,6 @@ CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 		addSubMenuItem(grp, menu, fmt.c_str(), formats[i]);
 	}
 	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(fmtChanged(QAction *)));
-
-	menu = new QMenu("Override Field (I)");
-	m_fieldMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", -1)->setChecked(true);
-	for (unsigned i = 0; fields[i]; i++)
-		addSubMenuItem(grp, menu,
-			       field2s(fields[i]).c_str(), fields[i]);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(fieldChanged(QAction *)));
 
 	menu = new QMenu("Override Colorspace (C)");
 	m_colorspaceMenu = menu;
@@ -295,18 +271,6 @@ CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 			       quantization2s(quantizations[i]).c_str(), quantizations[i]);
 	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(quantChanged(QAction *)));
 
-	menu = new QMenu("Display Options");
-	m_displayMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "Frame Resize", CAPTURE_GL_WIN_RESIZE)->setChecked(true);
-	addSubMenuItem(grp, menu, "Window Scrollbars", CAPTURE_GL_WIN_SCROLLBAR)->setChecked(false);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(windowScalingChanged(QAction *)));
-
-	m_resolutionOverride = new QAction("Override resolution", this);
-	m_resolutionOverride->setCheckable(true);
-	connect(m_resolutionOverride, SIGNAL(triggered(bool)),
-		this, SLOT(resolutionOverrideChanged(bool)));
-
 	m_enterFullScreen = new QAction("Enter fullscreen (F)", this);
 	connect(m_enterFullScreen, SIGNAL(triggered(bool)),
 		this, SLOT(toggleFullScreen(bool)));
@@ -324,7 +288,7 @@ CaptureWin::~CaptureWin()
 
 void CaptureWin::resizeEvent(QResizeEvent *event)
 {
-	QSize origSize = correctAspect(QSize(m_origWidth, m_origHeight));
+	QSize origSize = QSize(m_origWidth, m_origHeight);
 	QSize window = size();
 	qreal scale;
 
@@ -352,11 +316,6 @@ void CaptureWin::focusOutEvent(QFocusEvent *event)
 void CaptureWin::updateShader()
 {
 	setV4LFormat(m_v4l_fmt);
-	if (m_mode == AppModeTest || m_mode == AppModeTPG || m_mode == AppModeFile) {
-		delete m_timer;
-		m_timer = NULL;
-		startTimer();
-	}
 	m_updateShader = true;
 }
 
@@ -365,10 +324,7 @@ void CaptureWin::showCurrentOverrides()
 	static bool firstTime = true;
 	const char *prefix = firstTime ? "" : "New ";
 
-	if (m_mode == AppModeTest)
-		return;
-
-	if (m_canOverrideResolution || firstTime) {
+	if (firstTime) {
 		printf("%sPixel Format: '%s' %s\n", prefix,
 		       fcc2s(m_origPixelFormat).c_str(),
 		       pixfmt2s(m_origPixelFormat).c_str());
@@ -387,13 +343,11 @@ void CaptureWin::showCurrentOverrides()
 void CaptureWin::restoreAll(bool checked)
 {
 	m_overridePixelFormat = m_origPixelFormat;
-	m_overrideField = m_origField;
 	m_overrideColorspace = m_origColorspace;
 	m_overrideXferFunc = m_origXferFunc;
 	m_overrideYCbCrEnc = m_origYCbCrEnc;
 	m_overrideHSVEnc = m_origHSVEnc;
 	m_overrideQuantization = m_origQuantization;
-	m_overrideWidth = m_overrideHeight = 0;
 	showCurrentOverrides();
 	restoreSize();
 }
@@ -406,15 +360,6 @@ void CaptureWin::fmtChanged(QAction *a)
 	printf("New Pixel Format: '%s' %s\n",
 	       fcc2s(m_overridePixelFormat).c_str(),
 	       pixfmt2s(m_overridePixelFormat).c_str());
-	updateShader();
-}
-
-void CaptureWin::fieldChanged(QAction *a)
-{
-	m_overrideField = a->data().toInt();
-	if (m_overrideField == 0xffffffff)
-		m_overrideField = m_origField;
-	printf("New Field: %s\n", field2s(m_overrideField).c_str());
 	updateShader();
 }
 
@@ -465,44 +410,11 @@ void CaptureWin::quantChanged(QAction *a)
 
 void CaptureWin::restoreSize(bool)
 {
-	QSize s = correctAspect(QSize(m_origWidth, m_origHeight));
+	QSize s = QSize(m_origWidth, m_origHeight);
 
 	m_scrollArea->resize(s);
 	resize(s);
 	updateShader();
-}
-
-QSize CaptureWin::correctAspect(const QSize &s) const
-{
-	qreal aspect
-		= (qreal)m_pixelaspect.denominator
-		/ (qreal)m_pixelaspect.numerator;
-
-	qreal w = s.width();
-	qreal h = s.height();
-
-	if (aspect < 1.0)
-		h *= 1.0 / aspect;
-	else
-		w *= aspect;
-	return QSize(qFloor(w), qFloor(h));
-}
-
-void CaptureWin::windowScalingChanged(QAction *a)
-{
-	m_scrollArea->setWidgetResizable(a->data().toInt() == CAPTURE_GL_WIN_RESIZE);
-	resize(correctAspect(QSize(m_origWidth, m_origHeight)));
-	updateShader();
-}
-
-void CaptureWin::resolutionOverrideChanged(bool checked)
-{
-	if (m_overrideWidth)
-		m_origWidth = m_overrideWidth;
-	if (m_overrideHeight)
-		m_origHeight = m_overrideHeight;
-
-	restoreSize();
 }
 
 void CaptureWin::toggleFullScreen(bool)
@@ -528,11 +440,7 @@ void CaptureWin::contextMenuEvent(QContextMenuEvent *event)
 	else
 		menu.addAction(m_enterFullScreen);
 
-	if (m_canOverrideResolution) {
-		menu.addAction(m_resolutionOverride);
-		menu.addMenu(m_fmtMenu);
-	}
-	menu.addMenu(m_fieldMenu);
+	menu.addMenu(m_fmtMenu);
 	menu.addMenu(m_colorspaceMenu);
 	menu.addMenu(m_xferFuncMenu);
 	if (m_is_hsv)
@@ -540,7 +448,6 @@ void CaptureWin::contextMenuEvent(QContextMenuEvent *event)
 	else if (!m_is_rgb)
 		menu.addMenu(m_ycbcrEncMenu);
 	menu.addMenu(m_quantMenu);
-	menu.addMenu(m_displayMenu);
 
 	menu.exec(event->globalPos());
 }
@@ -580,51 +487,13 @@ void CaptureWin::cycleMenu(__u32 &overrideVal, __u32 origVal,
 
 void CaptureWin::keyPressEvent(QKeyEvent *event)
 {
-	unsigned w = m_v4l_fmt.g_width();
-	unsigned h = m_v4l_fmt.g_frame_height();
-	unsigned p = m_overrideHorPadding;
 	bool hasShift = event->modifiers() & Qt::ShiftModifier;
 	bool hasCtrl = event->modifiers() & Qt::ControlModifier;
-	bool scalingEnabled = m_canOverrideResolution &&
-			      m_resolutionOverride->isChecked();
 
 	switch (event->key()) {
-	case Qt::Key_Space:
-		if (m_mode == AppModeTest)
-			m_cnt = 1;
-		else if (m_singleStep && m_frame > m_singleStepStart)
-			m_singleStepNext = true;
-		return;
 	case Qt::Key_Escape:
 		if (!m_scrollArea->isFullScreen())
 			return;
-	case Qt::Key_Left:
-		if (hasShift) {
-			if (scalingEnabled && p >= 2)
-				p -= 2;
-		} else {
-			if (scalingEnabled && w > 16)
-				w -= 2;
-		}
-		break;
-	case Qt::Key_Right:
-		if (hasShift) {
-			if (scalingEnabled && p < 10240)
-				p += 2;
-		} else {
-			if (scalingEnabled && w < 10240)
-				w += 2;
-		}
-		break;
-	case Qt::Key_Up:
-		if (scalingEnabled && h > 16)
-			h -= 2;
-		break;
-	case Qt::Key_Down:
-		if (scalingEnabled && h < 10240)
-			h += 2;
-		break;
-
 	case Qt::Key_C:
 		cycleMenu(m_overrideColorspace, m_origColorspace,
 			  colorspaces, hasShift, hasCtrl);
@@ -644,16 +513,7 @@ void CaptureWin::keyPressEvent(QKeyEvent *event)
 		checkSubMenuItem(m_hsvEncMenu, m_overrideHSVEnc);
 		updateShader();
 		return;
-	case Qt::Key_I:
-		cycleMenu(m_overrideField, m_origField,
-			  fields, hasShift, hasCtrl);
-		printf("New Field: %s\n", field2s(m_overrideField).c_str());
-		checkSubMenuItem(m_fieldMenu, m_overrideField);
-		updateShader();
-		return;
 	case Qt::Key_P:
-		if (!m_canOverrideResolution)
-			return;
 		cycleMenu(m_overridePixelFormat, m_origPixelFormat,
 			  formats, hasShift, hasCtrl);
 		printf("New Pixel Format: '%s' %s\n", fcc2s(m_overridePixelFormat).c_str(),
@@ -690,19 +550,6 @@ void CaptureWin::keyPressEvent(QKeyEvent *event)
 	default:
 		QOpenGLWidget::keyPressEvent(event);
 		return;
-	}
-
-	if (scalingEnabled) {
-		if (m_scrollArea->widgetResizable())
-			m_scrollArea->resize(w, h);
-		else
-			resize(w, h);
-
-		if ((w + p) != m_v4l_fmt.g_bytesperline()) {
-			printf("New horizontal resolution: %u + %u (%u)\n", w, p, w + p);
-			setOverrideHorPadding(p);
-			updateShader();
-		}
 	}
 }
 
@@ -759,33 +606,8 @@ void CaptureWin::configureTexture(size_t idx)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
-void CaptureWin::setOverrideWidth(__u32 w)
-{
-	m_overrideWidth = w;
-
-	if (!m_overrideWidth && m_canOverrideResolution)
-		m_resolutionOverride->setChecked(true);
-}
-
-void CaptureWin::setOverrideHeight(__u32 h)
-{
-	m_overrideHeight = h;
-
-	if (!m_overrideHeight && m_canOverrideResolution)
-		m_resolutionOverride->setChecked(true);
-}
-
-void CaptureWin::setOverrideHorPadding(__u32 p)
-{
-	m_overrideHorPadding = p;
-
-	if (!m_overrideHorPadding && m_canOverrideResolution)
-		m_resolutionOverride->setChecked(true);
-}
-
 void CaptureWin::setModeV4L2(cv4l_fd *fd)
 {
-	m_mode = AppModeV4L2;
 	m_fd = fd;
 	QSocketNotifier *readSock = new QSocketNotifier(fd->g_fd(),
 		QSocketNotifier::Read, this);
@@ -801,46 +623,6 @@ void CaptureWin::setModeV4L2(cv4l_fd *fd)
 
 	if (m_verbose && m_fd->g_direct())
 		printf("using libv4l2\n");
-}
-
-void CaptureWin::setModeSocket(int socket, int port)
-{
-	m_mode = AppModeSocket;
-	m_sock = socket;
-	m_port = port;
-	if (m_ctx)
-		free(m_ctx);
-	m_ctx = fwht_alloc(m_v4l_fmt.g_pixelformat(), m_v4l_fmt.g_width(), m_v4l_fmt.g_height(),
-			   m_v4l_fmt.g_width(), m_v4l_fmt.g_height(),
-			   m_v4l_fmt.g_field(), m_v4l_fmt.g_colorspace(), m_v4l_fmt.g_xfer_func(),
-			   m_v4l_fmt.g_ycbcr_enc(), m_v4l_fmt.g_quantization());
-
-	QSocketNotifier *readSock = new QSocketNotifier(m_sock,
-		QSocketNotifier::Read, this);
-
-	connect(readSock, SIGNAL(activated(int)), this, SLOT(sockReadEvent()));
-}
-
-void CaptureWin::setModeFile(const QString &filename)
-{
-	m_mode = AppModeFile;
-	m_file.setFileName(filename);
-	if (!m_file.open(QIODevice::ReadOnly)) {
-		fprintf(stderr, "could not open %s\n", filename.toUtf8().data());
-		std::exit(EXIT_FAILURE);
-	}
-	m_canOverrideResolution = true;
-}
-
-void CaptureWin::setModeTPG()
-{
-	m_mode = AppModeTPG;
-}
-
-void CaptureWin::setModeTest(unsigned cnt)
-{
-	m_mode = AppModeTest;
-	m_test = cnt;
 }
 
 void CaptureWin::setQueue(cv4l_queue *q)
@@ -977,24 +759,12 @@ bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 {
 	m_is_sdtv = false;
 
-	if (m_mode == AppModeFile && m_overridePixelFormat)
+	if (m_overridePixelFormat)
 		fmt.s_pixelformat(m_overridePixelFormat);
 
 	if (!updateV4LFormat(fmt))
 		return false;
 
-	if (m_is_bayer) {
-		m_v4l_fmt.s_field(V4L2_FIELD_NONE);
-		m_overrideField = 0;
-	}
-	if (m_mode == AppModeFile && m_overrideWidth)
-		fmt.s_width(m_overrideWidth);
-	if (m_mode == AppModeFile && m_overrideHorPadding)
-		fmt.s_bytesperline(fmt.g_bytesperline() + m_overrideHorPadding);
-	if (m_mode == AppModeFile && m_overrideField != 0xffffffff)
-		fmt.s_field(m_overrideField);
-	if (m_mode == AppModeFile && m_overrideHeight)
-		fmt.s_frame_height(m_overrideHeight);
 	if (m_overrideColorspace != 0xffffffff)
 		fmt.s_colorspace(m_overrideColorspace);
 	if (m_is_hsv && m_overrideHSVEnc != 0xffffffff)
@@ -1080,24 +850,6 @@ bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 		}
 
 		printf("\n");
-		switch (m_mode) {
-		case AppModeSocket:
-			printf("Mode:              Capture from socket\n");
-			break;
-		case AppModeFile:
-			printf("Mode:              Read from file\n");
-			break;
-		case AppModeTest:
-			printf("Mode:              Test Formats\n");
-			break;
-		case AppModeTPG:
-			printf("Mode:              Test Pattern Generator\n");
-			break;
-		case AppModeV4L2:
-		default:
-			printf("Mode:              Capture\n");
-			break;
-		}
 		printf("Width x Height:    %ux%u\n", m_v4l_fmt.g_width(), m_v4l_fmt.g_height());
 		printf("Field:             %s\n", field2s(m_v4l_fmt.g_field()).c_str());
 		printf("Pixel Format:      %s ('%s')\n", fmt.description, fcc2s(m_v4l_fmt.g_pixelformat()).c_str());
@@ -1116,19 +868,10 @@ bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 	return true;
 }
 
-void CaptureWin::setPixelAspect(const v4l2_fract &pixelaspect)
-{
-	m_pixelaspect = pixelaspect;
-}
-
 void CaptureWin::v4l2ReadEvent()
 {
 	cv4l_buffer buf(m_fd->g_type());
 
-	if (m_singleStep && m_frame > m_singleStepStart && !m_singleStepNext)
-		return;
-
-	m_singleStepNext = false;
 	if (m_fd->dqbuf(buf))
 		return;
 
@@ -1142,12 +885,7 @@ void CaptureWin::v4l2ReadEvent()
 		buf.s_index(next);
 		m_fd->qbuf(buf);
 	}
-	m_frame++;
 	update();
-	if (m_cnt == 0)
-		return;
-	if (--m_cnt == 0)
-		std::exit(EXIT_SUCCESS);
 }
 
 void CaptureWin::v4l2ExceptionEvent()
@@ -1156,8 +894,7 @@ void CaptureWin::v4l2ExceptionEvent()
 	cv4l_fmt fmt;
 
 	while (m_fd->dqevent(ev) == 0) {
-		switch (ev.type) {
-		case V4L2_EVENT_SOURCE_CHANGE:
+		if (ev.type == V4L2_EVENT_SOURCE_CHANGE) {
 			m_fd->g_fmt(fmt);
 			if (!setV4LFormat(fmt)) {
 				fprintf(stderr, "Unsupported format: '%s' %s\n",
@@ -1166,195 +903,17 @@ void CaptureWin::v4l2ExceptionEvent()
 				std::exit(EXIT_FAILURE);
 			}
 			updateOrigValues();
+			showCurrentOverrides();
+
 			m_updateShader = true;
-			break;
 		}
 	}
-}
-
-void CaptureWin::listenForNewConnection()
-{
-	cv4l_fmt fmt;
-	v4l2_fract pixelaspect = { 1, 1 };
-
-	::close(m_sock);
-
-	for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++) {
-		m_curSize[p] = 0;
-		delete [] m_curData[p];
-		m_curData[p] = NULL;
-	}
-
-	int sock_fd;
-
-	for (;;) {
-		sock_fd = initSocket(m_port, fmt, pixelaspect);
-		if (setV4LFormat(fmt))
-			break;
-		fprintf(stderr, "Unsupported format: '%s' %s\n",
-			fcc2s(fmt.g_pixelformat()).c_str(),
-			pixfmt2s(fmt.g_pixelformat()).c_str());
-		::close(sock_fd);
-	}
-	if (m_ctx)
-		free(m_ctx);
-	m_ctx = fwht_alloc(fmt.g_pixelformat(), fmt.g_width(), fmt.g_height(),
-			   fmt.g_width(), fmt.g_height(),
-			   fmt.g_field(), fmt.g_colorspace(), fmt.g_xfer_func(),
-			   fmt.g_ycbcr_enc(), fmt.g_quantization());
-	setPixelAspect(pixelaspect);
-	updateOrigValues();
-	setModeSocket(sock_fd, m_port);
-	restoreSize();
-}
-
-int CaptureWin::read_u32(__u32 &v)
-{
-	int n;
-
-	v = 0;
-	n = read(m_sock, &v, sizeof(v));
-	if (n != sizeof(v)) {
-		fprintf(stderr, "could not read __u32\n");
-		return -1;
-	}
-	v = ntohl(v);
-	return 0;
-}
-
-void CaptureWin::sockReadEvent()
-{
-	int n;
-
-	if (m_singleStep && m_frame > m_singleStepStart && !m_singleStepNext)
-		return;
-	m_singleStepNext = false;
-
-	if (m_origPixelFormat == 0)
-		updateOrigValues();
-
-	if (m_curSize[0] == 0) {
-		for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++) {
-			m_curSize[p] = m_v4l_fmt.g_sizeimage(p);
-			m_curData[p] = new __u8[m_curSize[p]];
-		}
-	}
-
-	unsigned packet, sz;
-	bool is_fwht;
-
-	if (read_u32(packet))
-		goto new_conn;
-
-	if (packet == V4L_STREAM_PACKET_END) {
-		fprintf(stderr, "END packet read\n");
-		goto new_conn;
-	}
-
-	if (read_u32(sz))
-		goto new_conn;
-
-	if (packet != V4L_STREAM_PACKET_FRAME_VIDEO_RLE &&
-	    packet != V4L_STREAM_PACKET_FRAME_VIDEO_FWHT) {
-		char buf[1024];
-
-		fprintf(stderr, "expected FRAME_VIDEO, got 0x%08x\n", packet);
-		while (sz) {
-			unsigned rdsize = sz > sizeof(buf) ? sizeof(buf) : sz;
-
-			n = read(m_sock, buf, rdsize);
-			if (n < 0) {
-				fprintf(stderr, "error reading %d bytes\n", sz);
-				goto new_conn;
-			}
-			sz -= n;
-		}
-		return;
-	}
-
-	is_fwht = m_ctx && packet == V4L_STREAM_PACKET_FRAME_VIDEO_FWHT;
-
-	if (read_u32(sz))
-		goto new_conn;
-
-	if (sz != V4L_STREAM_PACKET_FRAME_VIDEO_SIZE_HDR) {
-		fprintf(stderr, "unsupported FRAME_VIDEO size\n");
-		goto new_conn;
-	}
-	if (read_u32(sz) ||  // ignore field
-	    read_u32(sz))    // ignore flags
-		goto new_conn;
-
-	for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++) {
-		__u32 max_size = is_fwht ? m_ctx->comp_max_size : m_curSize[p];
-		__u8 *dst = is_fwht ? m_ctx->state.compressed_frame : m_curData[p];
-		__u32 data_size;
-		__u32 offset;
-		__u32 size;
-
-		if (read_u32(sz))
-			goto new_conn;
-		if (sz != V4L_STREAM_PACKET_FRAME_VIDEO_SIZE_PLANE_HDR) {
-			fprintf(stderr, "unsupported FRAME_VIDEO plane size\n");
-			goto new_conn;
-		}
-		if (read_u32(size) || read_u32(data_size))
-			goto new_conn;
-		offset = is_fwht ? 0 : size - data_size;
-		sz = data_size;
-
-		if (data_size > max_size) {
-			fprintf(stderr, "data size is too large (%u > %u)\n",
-				data_size, max_size);
-			goto new_conn;
-		}
-		while (sz) {
-			n = read(m_sock, dst + offset, sz);
-			if (n < 0) {
-				fprintf(stderr, "error reading %d bytes\n", sz);
-				goto new_conn;
-			}
-			if ((__u32)n == sz)
-				break;
-			offset += n;
-			sz -= n;
-		}
-		if (is_fwht)
-			fwht_decompress(m_ctx, dst, data_size, m_curData[p], m_curSize[p]);
-		else
-			rle_decompress(dst, size, data_size,
-				       rle_calc_bpl(m_v4l_fmt.g_bytesperline(p), m_v4l_fmt.g_pixelformat()));
-	}
-	m_frame++;
-	update();
-	if (m_cnt == 0)
-		return;
-	if (--m_cnt == 0)
-		std::exit(EXIT_SUCCESS);
-	return;
-
-new_conn:
-	listenForNewConnection();
-}
-
-void CaptureWin::resizeGL(int w, int h)
-{
-	if (!m_canOverrideResolution || !m_resolutionOverride->isChecked())
-		return;
-	w &= ~1;
-	h &= ~1;
-	m_overrideWidth = w;
-	m_overrideHeight = h;
-	m_viewSize = QSize(m_overrideWidth, m_overrideHeight);
-	updateShader();
-	printf("New resolution: %ux%u\n", w, h);
 }
 
 void CaptureWin::updateOrigValues()
 {
 	m_origWidth = m_v4l_fmt.g_width();
 	m_origHeight = m_v4l_fmt.g_frame_height();
-	m_overrideWidth = m_overrideHeight = 0;
 	m_origPixelFormat = m_v4l_fmt.g_pixelformat();
 	m_origField = m_v4l_fmt.g_field();
 	m_origColorspace = m_v4l_fmt.g_colorspace();
@@ -1366,212 +925,5 @@ void CaptureWin::updateOrigValues()
 	else
 		m_origYCbCrEnc = m_v4l_fmt.g_ycbcr_enc();
 	m_origQuantization = m_v4l_fmt.g_quantization();
-	showCurrentOverrides();
 	m_viewSize = QSize(m_origWidth, m_origHeight);
-}
-
-void CaptureWin::initImageFormat()
-{
-	updateV4LFormat(m_v4l_fmt);
-	tpg_s_fourcc(&m_tpg, m_v4l_fmt.g_pixelformat());
-	bool is_alt = m_v4l_fmt.g_field() == V4L2_FIELD_ALTERNATE;
-
-	tpg_reset_source(&m_tpg, m_v4l_fmt.g_width(),
-			 m_v4l_fmt.g_frame_height(), m_v4l_fmt.g_field());
-	tpg_s_field(&m_tpg, m_v4l_fmt.g_first_field(m_std), is_alt);
-	tpg_s_colorspace(&m_tpg, m_v4l_fmt.g_colorspace());
-	tpg_s_xfer_func(&m_tpg, m_v4l_fmt.g_xfer_func());
-	if (m_is_hsv)
-		tpg_s_hsv_enc(&m_tpg, m_v4l_fmt.g_hsv_enc());
-	else if (!m_is_rgb)
-		tpg_s_ycbcr_enc(&m_tpg, m_v4l_fmt.g_ycbcr_enc());
-	tpg_s_quantization(&m_tpg, m_v4l_fmt.g_quantization());
-	m_v4l_fmt.s_num_planes(tpg_g_buffers(&m_tpg));
-	for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++) {
-		if (m_mode == AppModeFile && m_overrideHorPadding)
-			tpg_s_bytesperline(&m_tpg, p, tpg_g_bytesperline(&m_tpg, p) + m_overrideHorPadding);
-
-		m_v4l_fmt.s_bytesperline(tpg_g_bytesperline(&m_tpg, p), p);
-		m_v4l_fmt.s_sizeimage(tpg_calc_plane_size(&m_tpg, p), p);
-	}
-	if (tpg_g_buffers(&m_tpg) == 1) {
-		unsigned size = 0;
-
-		for (unsigned p = 0; p < tpg_g_planes(&m_tpg); p++)
-			size += tpg_calc_plane_size(&m_tpg, p);
-		m_v4l_fmt.s_sizeimage(size, 0);
-	}
-	if (m_verbose)
-		tpg_log_status(&m_tpg);
-}
-
-void CaptureWin::startTimer()
-{
-	if (m_origPixelFormat == 0)
-		updateOrigValues();
-	initImageFormat();
-
-	m_timer = new QTimer(this);
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(tpgUpdateFrame()));
-
-	m_imageSize = 0;
-	for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++)
-		m_imageSize += m_v4l_fmt.g_sizeimage(p);
-
-	if (m_file.isOpen())
-		m_file.seek(0);
-
-	if (m_file.isOpen() && m_imageSize > m_file.size()) {
-		fprintf(stderr, "the file size is too small (expect at least %u, got %llu)\n",
-			m_imageSize, m_file.size());
-	}
-
-	for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++) {
-		m_curSize[p] = m_v4l_fmt.g_sizeimage(p);
-		delete [] m_curData[p];
-		if (m_canOverrideResolution)
-			m_curData[p] = new __u8[4096 * 2160 * (p ? 2 : 4)];
-		else
-			m_curData[p] = new __u8[m_curSize[p]];
-		if (m_file.isOpen())
-			m_file.read((char *)m_curData[p], m_curSize[p]);
-		else
-			tpg_fillbuffer(&m_tpg, 0, p, m_curData[p]);
-	}
-	bool is_alt = m_v4l_fmt.g_field() == V4L2_FIELD_ALTERNATE;
-	tpg_update_mv_count(&m_tpg, is_alt);
-	m_timer->setTimerType(Qt::PreciseTimer);
-	m_timer->setSingleShot(false);
-	m_timer->setInterval(1000.0 / (m_fps * (is_alt ? 2 : 1)));
-	m_timer->start(1000.0 / (m_fps * (is_alt ? 2 : 1)));
-	if (is_alt && m_cnt)
-		m_cnt *= 2;
-	if (m_mode == AppModeTest) {
-		fprintf(stderr, "test %s ('%s'), %s, %s, %s, ",
-			pixfmt2s(formats[m_testState.fmt_idx]).c_str(),
-			fcc2s(formats[m_testState.fmt_idx]).c_str(),
-			field2s(fields[m_testState.field_idx]).c_str(),
-			colorspace2s(colorspaces[m_testState.colorspace_idx]).c_str(),
-			xfer_func2s(xfer_funcs[m_testState.xfer_func_idx]).c_str());
-		if (m_is_rgb)
-			fprintf(stderr, "%s\n",
-				quantization2s(quantizations[m_testState.quant_idx]).c_str());
-		else if (m_is_hsv)
-			fprintf(stderr, "%s, %s\n",
-				ycbcr_enc2s(ycbcr_encs[m_testState.hsv_enc_idx]).c_str(),
-				quantization2s(quantizations[m_testState.quant_idx]).c_str());
-		else
-			fprintf(stderr, "%s, %s\n",
-				ycbcr_enc2s(ycbcr_encs[m_testState.ycbcr_enc_idx]).c_str(),
-				quantization2s(quantizations[m_testState.quant_idx]).c_str());
-	}
-}
-
-void CaptureWin::tpgUpdateFrame()
-{
-	bool is_alt = m_v4l_fmt.g_field() == V4L2_FIELD_ALTERNATE;
-
-	if (m_mode != AppModeTest && m_singleStep && m_frame > m_singleStepStart &&
-	    !m_singleStepNext)
-		return;
-	m_singleStepNext = false;
-
-	if (m_mode == AppModeFile && m_file.pos() + m_imageSize > m_file.size())
-		m_file.seek(0);
-
-	if (m_mode != AppModeFile && is_alt) {
-		if (m_tpg.field == V4L2_FIELD_TOP)
-			tpg_s_field(&m_tpg, V4L2_FIELD_BOTTOM, true);
-		else
-			tpg_s_field(&m_tpg, V4L2_FIELD_TOP, true);
-	}
-
-	for (unsigned p = 0; p < m_v4l_fmt.g_num_planes(); p++) {
-		if (m_mode == AppModeFile)
-			m_file.read((char *)m_curData[p], m_curSize[p]);
-		else
-			tpg_fillbuffer(&m_tpg, 0, p, m_curData[p]);
-	}
-	m_frame++;
-	update();
-	if (m_cnt != 1)
-		tpg_update_mv_count(&m_tpg, is_alt);
-
-	if (m_cnt == 0)
-		return;
-	if (--m_cnt)
-		return;
-
-	delete m_timer;
-	m_timer = NULL;
-	if (!m_test)
-		std::exit(EXIT_SUCCESS);
-
-	m_cnt = m_test;
-
-	bool mask_quant = m_testState.mask & QUANT_MASK;
-	bool mask_ycbcr_enc = m_is_rgb || m_is_hsv || (m_testState.mask & YCBCR_HSV_ENC_MASK);
-	bool mask_hsv_enc = !m_is_hsv || (m_testState.mask & YCBCR_HSV_ENC_MASK);
-	bool mask_xfer_func = m_testState.mask & XFER_FUNC_MASK;
-	bool mask_colorspace = m_testState.mask & COLORSPACE_MASK;
-	bool mask_field = m_is_bayer || (m_testState.mask & FIELD_MASK);
-	bool mask_fmt = m_testState.mask & FMT_MASK;
-
-	if (mask_quant ||
-	    quantizations[++m_testState.quant_idx] == 0) {
-		if (!mask_quant)
-			m_testState.quant_idx = 0;
-		if (mask_ycbcr_enc ||
-		    ycbcr_encs[++m_testState.ycbcr_enc_idx] == 0) {
-			if (!mask_ycbcr_enc)
-				m_testState.ycbcr_enc_idx = 0;
-			if (mask_hsv_enc ||
-			    hsv_encs[++m_testState.hsv_enc_idx] == 0) {
-				if (!mask_hsv_enc)
-					m_testState.hsv_enc_idx = 0;
-				if (mask_xfer_func ||
-				    xfer_funcs[++m_testState.xfer_func_idx] == 0) {
-					if (!mask_xfer_func)
-						m_testState.xfer_func_idx = 0;
-					if (mask_colorspace ||
-					    colorspaces[++m_testState.colorspace_idx] == 0) {
-						if (!mask_colorspace)
-							m_testState.colorspace_idx = 0;
-						if (mask_field ||
-						    fields[++m_testState.field_idx] == 0) {
-							if (!mask_field)
-								m_testState.field_idx = 0;
-							if (mask_fmt ||
-							    formats[++m_testState.fmt_idx] == 0)
-								std::exit(EXIT_SUCCESS);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	while (!supportedFmt(formats[m_testState.fmt_idx]))
-		if (formats[++m_testState.fmt_idx] == 0)
-			std::exit(EXIT_SUCCESS);
-
-	m_v4l_fmt.s_pixelformat(formats[m_testState.fmt_idx]);
-	updateV4LFormat(m_v4l_fmt);
-	m_v4l_fmt.s_field(fields[m_testState.field_idx]);
-	m_v4l_fmt.s_colorspace(colorspaces[m_testState.colorspace_idx]);
-	m_v4l_fmt.s_xfer_func(xfer_funcs[m_testState.xfer_func_idx]);
-	if (m_is_hsv)
-		m_v4l_fmt.s_ycbcr_enc(hsv_encs[m_testState.hsv_enc_idx]);
-	else
-		m_v4l_fmt.s_ycbcr_enc(ycbcr_encs[m_testState.ycbcr_enc_idx]);
-	m_v4l_fmt.s_quantization(quantizations[m_testState.quant_idx]);
-
-	if (m_accepts_srgb &&
-	    (m_v4l_fmt.g_quantization() == V4L2_QUANTIZATION_LIM_RANGE ||
-	    m_v4l_fmt.g_xfer_func() != V4L2_XFER_FUNC_SRGB)) {
-		/* Can't let openGL convert from non-linear to linear */
-		m_accepts_srgb = false;
-	}
-	startTimer();
-	m_updateShader = true;
 }
