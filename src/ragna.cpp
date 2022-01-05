@@ -350,8 +350,10 @@ int main(int argc, char **argv)
 	q.obtain_bufs(&fd);
 	q.queue_all(&fd);
 	win.setQueue(&q);
-	if (fd.streamon())
+	if (fd.streamon()) {
+		fputs("Error initializing the stream. Stopping.\n", stderr);
 		std::exit(EXIT_FAILURE);
+	}
 
 	sa->show();
 	return disp.exec();
