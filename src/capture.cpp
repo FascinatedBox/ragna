@@ -9,6 +9,7 @@
  */
 
 #include <QApplication>
+#include <QMenu>
 #include <QSocketNotifier>
 #include <QtMath>
 
@@ -171,27 +172,6 @@ const __u32 quantizations[] = {
 	0
 };
 
-static void checkSubMenuItem(QMenu *menu, __u32 value)
-{
-	QList<QAction *> actions = menu->actions();
-	QList<QAction *>::iterator iter;
-
-	for (iter = actions.begin(); iter != actions.end(); ++iter)
-		if ((*iter)->data() == value)
-			break;
-	if (iter != actions.end())
-		(*iter)->setChecked(true);
-}
-
-static QAction *addSubMenuItem(QActionGroup *grp, QMenu *menu, const QString &text, int val)
-{
-	QAction *a = grp->addAction(menu->addAction(text));
-
-	a->setData(QVariant(val));
-	a->setCheckable(true);
-	return a;
-}
-
 CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 	QOpenGLWidget(parent),
 	m_fd(0),
@@ -205,61 +185,6 @@ CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 {
 	m_curSize[0] = 0;
 	m_curData[0] = 0;
-	QMenu *menu = new QMenu("Override Pixel Format (P)");
-	m_fmtMenu = menu;
-	QActionGroup *grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", 0)->setChecked(true);
-	for (unsigned i = 0; formats[i]; i++) {
-		std::string fmt = "'" + fcc2s(formats[i]) + "' " + pixfmt2s(formats[i]);
-
-		addSubMenuItem(grp, menu, fmt.c_str(), formats[i]);
-	}
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(fmtChanged(QAction *)));
-
-	menu = new QMenu("Override Colorspace (C)");
-	m_colorspaceMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", -1)->setChecked(true);
-	for (unsigned i = 0; colorspaces[i]; i++)
-		addSubMenuItem(grp, menu,
-			       colorspace2s(colorspaces[i]).c_str(), colorspaces[i]);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(colorspaceChanged(QAction *)));
-
-	menu = new QMenu("Override Transfer Function (X)");
-	m_xferFuncMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", -1)->setChecked(true);
-	for (unsigned i = 0; xfer_funcs[i]; i++)
-		addSubMenuItem(grp, menu,
-			       xfer_func2s(xfer_funcs[i]).c_str(), xfer_funcs[i]);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(xferFuncChanged(QAction *)));
-
-	menu = new QMenu("Override Y'CbCr Encoding (Y)");
-	m_ycbcrEncMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", -1)->setChecked(true);
-	for (unsigned i = 0; ycbcr_encs[i]; i++)
-		addSubMenuItem(grp, menu,
-			       ycbcr_enc2s(ycbcr_encs[i]).c_str(), ycbcr_encs[i]);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(ycbcrEncChanged(QAction *)));
-
-	menu = new QMenu("Override HSV Encoding (H)");
-	m_hsvEncMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", -1)->setChecked(true);
-	for (unsigned i = 0; hsv_encs[i]; i++)
-		addSubMenuItem(grp, menu,
-			       ycbcr_enc2s(hsv_encs[i]).c_str(), hsv_encs[i]);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(hsvEncChanged(QAction *)));
-
-	menu = new QMenu("Override Quantization (R)");
-	m_quantMenu = menu;
-	grp = new QActionGroup(menu);
-	addSubMenuItem(grp, menu, "No Override", -1)->setChecked(true);
-	for (unsigned i = 0; quantizations[i]; i++)
-		addSubMenuItem(grp, menu,
-			       quantization2s(quantizations[i]).c_str(), quantizations[i]);
-	connect(grp, SIGNAL(triggered(QAction *)), this, SLOT(quantChanged(QAction *)));
 
 	m_enterFullScreen = new QAction("Enter fullscreen (F)", this);
 	connect(m_enterFullScreen, SIGNAL(triggered(bool)),
@@ -342,58 +267,30 @@ void CaptureWin::restoreAll(bool checked)
 	restoreSize();
 }
 
-void CaptureWin::fmtChanged(QAction *a)
+void CaptureWin::updateColorspace(int data)
 {
-	m_overridePixelFormat = a->data().toInt();
-	if (m_overridePixelFormat == 0)
-		m_overridePixelFormat = m_origPixelFormat;
-	printf("New Pixel Format: '%s' %s\n",
-	       fcc2s(m_overridePixelFormat).c_str(),
-	       pixfmt2s(m_overridePixelFormat).c_str());
-	updateShader();
-}
-
-void CaptureWin::colorspaceChanged(QAction *a)
-{
-	m_overrideColorspace = a->data().toInt();
-	if (m_overrideColorspace == 0xffffffff)
-		m_overrideColorspace = m_origColorspace;
+	m_overrideColorspace = data;
 	printf("New Colorspace: %s\n", colorspace2s(m_overrideColorspace).c_str());
 	updateShader();
 }
 
-void CaptureWin::xferFuncChanged(QAction *a)
+void CaptureWin::updateYcbcrEnc(int data)
 {
-	m_overrideXferFunc = a->data().toInt();
-	if (m_overrideXferFunc == 0xffffffff)
-		m_overrideXferFunc = m_origXferFunc;
-	printf("New Transfer Function: %s\n", xfer_func2s(m_overrideXferFunc).c_str());
-	updateShader();
-}
-
-void CaptureWin::ycbcrEncChanged(QAction *a)
-{
-	m_overrideYCbCrEnc = a->data().toInt();
-	if (m_overrideYCbCrEnc == 0xffffffff)
-		m_overrideYCbCrEnc = m_origYCbCrEnc;
+	m_overrideYCbCrEnc = data;
 	printf("New Y'CbCr Encoding: %s\n", ycbcr_enc2s(m_overrideYCbCrEnc).c_str());
 	updateShader();
 }
 
-void CaptureWin::hsvEncChanged(QAction *a)
+void CaptureWin::updateXferFunc(int data)
 {
-	m_overrideHSVEnc = a->data().toInt();
-	if (m_overrideHSVEnc == 0xffffffff)
-		m_overrideHSVEnc = m_origHSVEnc;
-	printf("New HSV Encoding: %s\n", ycbcr_enc2s(m_overrideHSVEnc).c_str());
+	m_overrideXferFunc = data;
+	printf("New Transfer Function: %s\n", xfer_func2s(m_overrideXferFunc).c_str());
 	updateShader();
 }
 
-void CaptureWin::quantChanged(QAction *a)
+void CaptureWin::updateQuantization(int data)
 {
-	m_overrideQuantization = a->data().toInt();
-	if (m_overrideQuantization == 0xffffffff)
-		m_overrideQuantization = m_origQuantization;
+	m_overrideQuantization = data;
 	printf("New Quantization Range: %s\n", quantization2s(m_overrideQuantization).c_str());
 	updateShader();
 }
@@ -430,15 +327,6 @@ void CaptureWin::contextMenuEvent(QContextMenuEvent *event)
 	else
 		menu.addAction(m_enterFullScreen);
 
-	menu.addMenu(m_fmtMenu);
-	menu.addMenu(m_colorspaceMenu);
-	menu.addMenu(m_xferFuncMenu);
-	if (m_is_hsv)
-		menu.addMenu(m_hsvEncMenu);
-	else if (!m_is_rgb)
-		menu.addMenu(m_ycbcrEncMenu);
-	menu.addMenu(m_quantMenu);
-
 	menu.exec(event->globalPos());
 }
 
@@ -450,92 +338,20 @@ void CaptureWin::mouseDoubleClickEvent(QMouseEvent * e)
 	toggleFullScreen();
 }
 
-void CaptureWin::cycleMenu(__u32 &overrideVal, __u32 origVal,
-			     const __u32 values[], bool hasShift, bool hasCtrl)
-{
-	unsigned i;
-
-	if (overrideVal == 0xffffffff || hasCtrl)
-		overrideVal = origVal;
-	if (hasCtrl)
-		return;
-	for (i = 0; values[i] && values[i] != overrideVal; i++);
-	if (!values[i])
-		overrideVal = values[0];
-	else if (hasShift) {
-		if (i)
-			overrideVal = values[i - 1];
-		else for (i = 0; values[i]; i++)
-			overrideVal = values[i];
-	} else {
-		if (!values[i + 1])
-			overrideVal = values[0];
-		else
-			overrideVal = values[i + 1];
-	}
-}
-
 void CaptureWin::keyPressEvent(QKeyEvent *event)
 {
-	bool hasShift = event->modifiers() & Qt::ShiftModifier;
-	bool hasCtrl = event->modifiers() & Qt::ControlModifier;
-
 	switch (event->key()) {
 	case Qt::Key_Escape:
 		if (!m_scrollArea->isFullScreen())
 			return;
-	case Qt::Key_C:
-		cycleMenu(m_overrideColorspace, m_origColorspace,
-			  colorspaces, hasShift, hasCtrl);
-		printf("New Colorspace: %s\n", colorspace2s(m_overrideColorspace).c_str());
-		checkSubMenuItem(m_colorspaceMenu, m_overrideColorspace);
-		updateShader();
+	case Qt::Key_M:
+		emit showConfigWindow();
 		return;
 	case Qt::Key_F:
 		toggleFullScreen();
 		return;
-	case Qt::Key_H:
-		if (!m_is_hsv)
-			return;
-		cycleMenu(m_overrideHSVEnc, m_origHSVEnc,
-			  hsv_encs, hasShift, hasCtrl);
-		printf("New HSV Encoding: %s\n", ycbcr_enc2s(m_overrideHSVEnc).c_str());
-		checkSubMenuItem(m_hsvEncMenu, m_overrideHSVEnc);
-		updateShader();
-		return;
-	case Qt::Key_P:
-		cycleMenu(m_overridePixelFormat, m_origPixelFormat,
-			  formats, hasShift, hasCtrl);
-		printf("New Pixel Format: '%s' %s\n", fcc2s(m_overridePixelFormat).c_str(),
-		       pixfmt2s(m_overridePixelFormat).c_str());
-		checkSubMenuItem(m_fmtMenu, m_overridePixelFormat);
-		updateShader();
-		return;
 	case Qt::Key_Q:
 		QApplication::quit();
-		return;
-	case Qt::Key_R:
-		cycleMenu(m_overrideQuantization, m_origQuantization,
-			  quantizations, hasShift, hasCtrl);
-		printf("New Quantization Range: %s\n", quantization2s(m_overrideQuantization).c_str());
-		checkSubMenuItem(m_quantMenu, m_overrideQuantization);
-		updateShader();
-		return;
-	case Qt::Key_X:
-		cycleMenu(m_overrideXferFunc, m_origXferFunc,
-			  xfer_funcs, hasShift, hasCtrl);
-		printf("New Transfer Function: %s\n", xfer_func2s(m_overrideXferFunc).c_str());
-		checkSubMenuItem(m_xferFuncMenu, m_overrideXferFunc);
-		updateShader();
-		return;
-	case Qt::Key_Y:
-		if (m_is_rgb || m_is_hsv)
-			return;
-		cycleMenu(m_overrideYCbCrEnc, m_origYCbCrEnc,
-			  ycbcr_encs, hasShift, hasCtrl);
-		printf("New Y'CbCr Encoding: %s\n", ycbcr_enc2s(m_overrideYCbCrEnc).c_str());
-		checkSubMenuItem(m_ycbcrEncMenu, m_overrideYCbCrEnc);
-		updateShader();
 		return;
 	default:
 		QOpenGLWidget::keyPressEvent(event);
@@ -916,4 +732,8 @@ void CaptureWin::updateOrigValues()
 		m_origYCbCrEnc = m_v4l_fmt.g_ycbcr_enc();
 	m_origQuantization = m_v4l_fmt.g_quantization();
 	m_viewSize = QSize(m_origWidth, m_origHeight);
+	m_overrideColorspace = m_origColorspace;
+	m_overrideXferFunc = m_origXferFunc;
+	m_overrideYCbCrEnc = m_origYCbCrEnc;
+	m_overrideQuantization = m_origQuantization;
 }

@@ -10,7 +10,6 @@
 #define QT_NO_OPENGL_ES_2
 
 #include <QKeyEvent>
-#include <QMenu>
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
@@ -50,18 +49,26 @@ public:
 	void setOverrideXferFunc(__u32 xfer_func) { m_overrideXferFunc = xfer_func; }
 	void setOverrideQuantization(__u32 quant) { m_overrideQuantization = quant; }
 
+	__u32 getColorspace() { return m_overrideColorspace; }
+	__u32 getYcbcrEnc() { return m_overrideYCbCrEnc; }
+	__u32 getXferFunc() { return m_overrideXferFunc; }
+	__u32 getQuantization() { return m_overrideQuantization; }
+
+signals:
+	void showConfigWindow();
+
+public slots:
+	void updateColorspace(int);
+	void updateYcbcrEnc(int);
+	void updateXferFunc(int);
+	void updateQuantization(int);
+
 private slots:
 	void v4l2ReadEvent();
 	void v4l2ExceptionEvent();
 
 	void restoreAll(bool checked);
 	void restoreSize(bool checked = false);
-	void fmtChanged(QAction *a);
-	void colorspaceChanged(QAction *a);
-	void xferFuncChanged(QAction *a);
-	void ycbcrEncChanged(QAction *a);
-	void hsvEncChanged(QAction *a);
-	void quantChanged(QAction *a);
 	void toggleFullScreen(bool b = false);
 
 private:
@@ -74,8 +81,6 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void mouseDoubleClickEvent(QMouseEvent * e);
 	void showCurrentOverrides();
-	void cycleMenu(__u32 &overrideVal, __u32 origVal,
-		       const __u32 values[], bool hasShift, bool hasCtrl);
 
 	bool supportedFmt(__u32 fmt);
 	void checkError(const char *msg);
@@ -150,13 +155,6 @@ private:
 	QAction *m_resolutionOverride;
 	QAction *m_exitFullScreen;
 	QAction *m_enterFullScreen;
-	QMenu *m_fmtMenu;
-	QMenu *m_fieldMenu;
-	QMenu *m_colorspaceMenu;
-	QMenu *m_xferFuncMenu;
-	QMenu *m_ycbcrEncMenu;
-	QMenu *m_hsvEncMenu;
-	QMenu *m_quantMenu;
 };
 
 #endif

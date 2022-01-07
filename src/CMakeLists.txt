@@ -1,16 +1,25 @@
 set(MOCUIC_DIR ${CMAKE_CURRENT_BINARY_DIR}/.mocuic)
 
+qt5_add_resources(
+    RCC_SOURCES
+    ragna.qrc
+)
+
 add_executable(
     ragna
         capture.cpp
         paint.cpp
         ragna.cpp
+        ragnaconfigcombobox.cpp
+        ragnaconfigwindow.cpp
+        ragnacontroller.cpp
         v4l-common/codec-fwht.c
         v4l-common/codec-v4l2-fwht.c
         v4l-common/v4l2-info.cpp
         v4l-common/v4l2-tpg-colors.c
         v4l-common/v4l2-tpg-core.c
         v4l-common/v4l-stream.c
+        ${RCC_SOURCES}
 )
 
 set_target_properties(

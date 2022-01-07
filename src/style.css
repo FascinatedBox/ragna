@@ -1,0 +1,51 @@
+#configWindow {
+    border-radius: 4px;
+
+    background-color: #3a3a3a;
+}
+
+
+
+#configWindow QListWidget {
+    font-size: 18px;
+
+    outline-style: none;
+
+    background-color: black;
+    color: black;
+}
+
+#configWindow QListWidget::item {
+    background-color: #0f0f0f;
+    padding: 10 10 10 15;
+}
+
+#configWindow QListWidget::item:selected {
+    background-color: palette(highlight);
+}
+
+
+
+#configWindow QLabel {
+    background-color: #3a3a3a;
+    color: #fafafa;
+}
+
+#configWindow QComboBox {
+    border: none;
+    border-radius: 3px;
+    padding: 2px 18px 2px 10px;
+
+    background-color: #4c4c4c;
+    color: white;
+}
+
+#configWindow QComboBox QAbstractItemView {
+    border-style: none;
+    background-color: #4c4c4c;
+    color: white;
+}
+
+#configWindow QComboBox:selected {
+    background-color: palette(highlight);
+}

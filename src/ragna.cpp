@@ -6,7 +6,7 @@
  */
 
 #include <QApplication>
-#include "capture.h"
+#include "ragnacontroller.h"
 #include "v4l2-info.h"
 
 static void usage()
@@ -189,6 +189,16 @@ static bool isOption(const QString &opt, const char *longOpt, const char *shortO
 	return opt == longOpt || opt == shortOpt;
 }
 
+QString loadFile(QString path)
+{
+    QFile f(path);
+    f.open(QIODevice::ReadOnly);
+    QString s = f.readAll();
+    f.close();
+
+    return s;
+}
+
 int main(int argc, char **argv)
 {
 	QApplication disp(argc, argv);
@@ -355,6 +365,11 @@ int main(int argc, char **argv)
 		std::exit(EXIT_FAILURE);
 	}
 
-	sa->show();
+	RagnaController rc(&win, sa);
+
+	disp.setStyleSheet(loadFile(":/style.css"));
+
+	rc.start();
+
 	return disp.exec();
 }
