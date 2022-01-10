@@ -114,8 +114,6 @@ private:
 	cv4l_queue *m_v4l_queue;
 	bool m_verbose;
 	bool m_reportTimings;
-	bool m_is_sdtv;
-	v4l2_std_id m_std;
 	bool m_is_rgb;
 	bool m_is_hsv;
 	bool m_is_bayer;

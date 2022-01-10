@@ -563,8 +563,6 @@ bool CaptureWin::updateV4LFormat(const cv4l_fmt &fmt)
 
 bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 {
-	m_is_sdtv = false;
-
 	if (m_overridePixelFormat)
 		fmt.s_pixelformat(m_overridePixelFormat);
 
@@ -584,26 +582,6 @@ bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 
 	m_v4l_fmt = fmt;
 
-	v4l2_input in;
-
-	m_std = 0;
-	if (m_fd && !m_fd->g_input(in.index) && !m_fd->enum_input(in, true, in.index)) {
-		if (in.capabilities & V4L2_IN_CAP_STD) {
-			m_is_sdtv = true;
-			if (m_fd->g_std(m_std))
-				m_std = fmt.g_frame_height() <= 480 ?
-					V4L2_STD_525_60 : V4L2_STD_625_50;
-		} else if (in.capabilities & V4L2_IN_CAP_DV_TIMINGS) {
-			v4l2_dv_timings timings;
-			if (m_fd->g_dv_timings(timings) == 0) {
-				m_is_sdtv = timings.bt.width <= 720 && timings.bt.height <= 576;
-				if (m_is_sdtv)
-					m_std = timings.bt.height <= 480 ?
-						V4L2_STD_525_60 : V4L2_STD_625_50;
-			}
-		}
-	}
-
 	switch (fmt.g_colorspace()) {
 	case V4L2_COLORSPACE_SMPTE170M:
 	case V4L2_COLORSPACE_SMPTE240M:
@@ -620,8 +598,6 @@ bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 		// based on the pixel format.
 		if (m_is_rgb)
 			m_v4l_fmt.s_colorspace(V4L2_COLORSPACE_SRGB);
-		else if (m_is_sdtv)
-			m_v4l_fmt.s_colorspace(V4L2_COLORSPACE_SMPTE170M);
 		else
 			m_v4l_fmt.s_colorspace(V4L2_COLORSPACE_REC709);
 		break;
