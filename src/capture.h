@@ -42,7 +42,6 @@ public:
 	bool updateV4LFormat(const cv4l_fmt &fmt);
 	void setReportTimings(bool report) { m_reportTimings = report; }
 	void setVerbose(bool verbose) { m_verbose = verbose; }
-	void setOverridePixelFormat(__u32 fmt) { m_overridePixelFormat = fmt; }
 	void setOverrideColorspace(__u32 colsp) { m_overrideColorspace = colsp; }
 	void setOverrideYCbCrEnc(__u32 ycbcr) { m_overrideYCbCrEnc = ycbcr; }
 	void setOverrideHSVEnc(__u32 hsv) { m_overrideHSVEnc = hsv; }
@@ -123,7 +122,6 @@ private:
 	bool m_updateShader;
 	QSize m_viewSize;
 
-	__u32 m_overridePixelFormat;
 	__u32 m_overrideColorspace;
 	__u32 m_overrideYCbCrEnc;
 	__u32 m_overrideHSVEnc;

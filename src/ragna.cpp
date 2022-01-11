@@ -37,8 +37,6 @@ static void usage()
 	       "  -Q, --quant=<q>          override quantization\n"
 	       "                           <q> can be one of the following quantization methods:\n"
 	       "                               default, full-range, lim-range\n"
-	       "  -P, --pixelformat=<p>    Interpret the data using this pixel format setting.\n"
-	       "                           Use -l to see the list of supported pixel formats.\n"
 	       "\n"
 	       "  -l, --list-formats       display all supported formats\n"
 	       "  -h, --help               display this help message\n"
@@ -212,7 +210,6 @@ int main(int argc, char **argv)
 	bool info_option = false;
 	bool report_timings = false;
 	bool verbose = false;
-	__u32 overridePixelFormat = 0;
 	__u32 overrideColorspace = 0xffffffff;
 	__u32 overrideYCbCrEnc = 0xffffffff;
 	__u32 overrideHSVEnc = 0xffffffff;
@@ -229,10 +226,6 @@ int main(int argc, char **argv)
 		if (isOptArg(args[i], "--device", "-d")) {
 			if (!processOption(args, i, video_device))
 				return 0;
-		} else if (isOptArg(args[i], "--pixelformat", "-P")) {
-			if (!processOption(args, i, s))
-				return 0;
-			overridePixelFormat = parse_pixel_format(s);
 		} else if (isOptArg(args[i], "--colorspace", "-C")) {
 			if (!processOption(args, i, s))
 				return 0;
@@ -291,30 +284,20 @@ int main(int argc, char **argv)
 	}
 	fd.g_fmt(fmt);
 
-	if (!overridePixelFormat) {
+	{
 		bool found = false;
+		unsigned int pf = fmt.g_pixelformat();
 
 		for (unsigned i = 0; formats[i]; i++) {
-			if (fmt.g_pixelformat() == formats[i]) {
+			if (pf == formats[i]) {
 				found = true;
 				break;
 			}
 		}
-		if (!found)
-			overridePixelFormat = V4L2_PIX_FMT_RGB24;
-	}
-
-	if (overridePixelFormat) {
-		fmt.s_pixelformat(overridePixelFormat);
-		fd.s_fmt(fmt);
-		fd.g_fmt(fmt);
-		if (fmt.g_pixelformat() != overridePixelFormat) {
-			fprintf(stderr, "Could not set format: '%s' %s\n",
-				fcc2s(overridePixelFormat).c_str(),
-				pixfmt2s(overridePixelFormat).c_str());
-			fprintf(stderr, "Fall back to format: '%s' %s\n",
-				fcc2s(fmt.g_pixelformat()).c_str(),
-				pixfmt2s(fmt.g_pixelformat()).c_str());
+		if (!found) {
+			fprintf(stderr, "Device has invalid/unknown format: '%s' %s\n",
+				fcc2s(pf).c_str(), pixfmt2s(pf).c_str());
+			std::exit(EXIT_FAILURE);
 		}
 	}
 
@@ -333,7 +316,6 @@ int main(int argc, char **argv)
 	win.setModeV4L2(&fd);
 	win.setFormat(format);
 	win.setReportTimings(report_timings);
-	win.setOverridePixelFormat(overridePixelFormat);
 	win.setOverrideColorspace(overrideColorspace);
 	win.setOverrideYCbCrEnc(overrideYCbCrEnc);
 	win.setOverrideHSVEnc(overrideHSVEnc);

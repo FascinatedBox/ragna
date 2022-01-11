@@ -257,7 +257,6 @@ void CaptureWin::showCurrentOverrides()
 
 void CaptureWin::restoreAll(bool checked)
 {
-	m_overridePixelFormat = m_origPixelFormat;
 	m_overrideColorspace = m_origColorspace;
 	m_overrideXferFunc = m_origXferFunc;
 	m_overrideYCbCrEnc = m_origYCbCrEnc;
@@ -563,9 +562,6 @@ bool CaptureWin::updateV4LFormat(const cv4l_fmt &fmt)
 
 bool CaptureWin::setV4LFormat(cv4l_fmt &fmt)
 {
-	if (m_overridePixelFormat)
-		fmt.s_pixelformat(m_overridePixelFormat);
-
 	if (!updateV4LFormat(fmt))
 		return false;
 
