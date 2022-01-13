@@ -21,24 +21,6 @@ static void usage()
 	       "\n"
 	       "  -b, --buffers=<bufs>     request <bufs> buffers (default 4) when streaming\n"
 	       "                           from a video device\n"
-	       "  -C, --colorspace=<c>     override colorspace\n"
-	       "                           <c> can be one of the following colorspaces:\n"
-	       "                               smpte170m, smpte240m, rec709, 470m, 470bg, jpeg, srgb,\n"
-	       "                               oprgb, bt2020, dcip3\n"
-	       "  -X, --xfer-func=<x>      override transfer function\n"
-	       "                           <x> can be one of the following transfer functions:\n"
-	       "                               default, 709, srgb, oprgb, smpte240m, smpte2084, dcip3, none\n"
-	       "  -Y, --ycbcr-enc=<y>      override Y'CbCr encoding\n"
-	       "                           <y> can be one of the following Y'CbCr encodings:\n"
-	       "                               default, 601, 709, xv601, xv709, bt2020, bt2020c, smpte240m\n"
-	       "  -H, --hsv-enc=<hsv>      override HSV encoding\n"
-	       "                           <hsv> can be one of the following HSV encodings:\n"
-	       "                               default, 180, 256\n"
-	       "  -Q, --quant=<q>          override quantization\n"
-	       "                           <q> can be one of the following quantization methods:\n"
-	       "                               default, full-range, lim-range\n"
-	       "\n"
-	       "  -l, --list-formats       display all supported formats\n"
 	       "  -h, --help               display this help message\n"
 	       "  -t, --timings            report frame render timings\n"
 	       "  -v, --verbose            be more verbose\n"
@@ -65,78 +47,6 @@ static QString getDeviceName(QString dev, QString &name)
 	bool ok;
 	name.toInt(&ok);
 	return ok ? QString("%1%2").arg(dev).arg(name) : name;
-}
-
-static __u32 parse_colorspace(const QString &s)
-{
-	if (s == "smpte170m") return V4L2_COLORSPACE_SMPTE170M;
-	if (s == "smpte240m") return V4L2_COLORSPACE_SMPTE240M;
-	if (s == "rec709") return V4L2_COLORSPACE_REC709;
-	if (s == "470m") return V4L2_COLORSPACE_470_SYSTEM_M;
-	if (s == "470bg") return V4L2_COLORSPACE_470_SYSTEM_BG;
-	if (s == "jpeg") return V4L2_COLORSPACE_JPEG;
-	if (s == "srgb") return V4L2_COLORSPACE_SRGB;
-	if (s == "oprgb") return V4L2_COLORSPACE_OPRGB;
-	if (s == "bt2020") return V4L2_COLORSPACE_BT2020;
-	if (s == "dcip3") return V4L2_COLORSPACE_DCI_P3;
-	return 0;
-}
-
-static __u32 parse_xfer_func(const QString &s)
-{
-	if (s == "default") return V4L2_XFER_FUNC_DEFAULT;
-	if (s == "smpte240m") return V4L2_XFER_FUNC_SMPTE240M;
-	if (s == "rec709") return V4L2_XFER_FUNC_709;
-	if (s == "srgb") return V4L2_XFER_FUNC_SRGB;
-	if (s == "oprgb") return V4L2_XFER_FUNC_OPRGB;
-	if (s == "dcip3") return V4L2_XFER_FUNC_DCI_P3;
-	if (s == "smpte2084") return V4L2_XFER_FUNC_SMPTE2084;
-	if (s == "none") return V4L2_XFER_FUNC_NONE;
-	return 0;
-}
-
-static __u32 parse_ycbcr(const QString &s)
-{
-	if (s == "default") return V4L2_YCBCR_ENC_DEFAULT;
-	if (s == "601") return V4L2_YCBCR_ENC_601;
-	if (s == "709") return V4L2_YCBCR_ENC_709;
-	if (s == "xv601") return V4L2_YCBCR_ENC_XV601;
-	if (s == "xv709") return V4L2_YCBCR_ENC_XV709;
-	if (s == "bt2020") return V4L2_YCBCR_ENC_BT2020;
-	if (s == "bt2020c") return V4L2_YCBCR_ENC_BT2020_CONST_LUM;
-	if (s == "smpte240m") return V4L2_YCBCR_ENC_SMPTE240M;
-	return V4L2_YCBCR_ENC_DEFAULT;
-}
-
-static __u32 parse_hsv(const QString &s)
-{
-	if (s == "default") return V4L2_YCBCR_ENC_DEFAULT;
-	if (s == "180") return V4L2_HSV_ENC_180;
-	if (s == "256") return V4L2_HSV_ENC_256;
-	return V4L2_YCBCR_ENC_DEFAULT;
-}
-
-static __u32 parse_quantization(const QString &s)
-{
-	if (s == "default") return V4L2_QUANTIZATION_DEFAULT;
-	if (s == "full-range") return V4L2_QUANTIZATION_FULL_RANGE;
-	if (s == "lim-range") return V4L2_QUANTIZATION_LIM_RANGE;
-	return V4L2_QUANTIZATION_DEFAULT;
-}
-
-static __u32 parse_pixel_format(const QString &s)
-{
-	for (unsigned i = 0; formats[i]; i++)
-		if (s == fcc2s(formats[i]).c_str())
-			return formats[i];
-	return 0;
-}
-
-static void list_formats()
-{
-	for (unsigned i = 0; formats[i]; i++)
-		printf("'%s':\r\t\t%s\n", fcc2s(formats[i]).c_str(),
-		       pixfmt2s(formats[i]).c_str());
 }
 
 static bool processOption(const QStringList &args, int &i, QString &s)
@@ -210,11 +120,6 @@ int main(int argc, char **argv)
 	bool info_option = false;
 	bool report_timings = false;
 	bool verbose = false;
-	__u32 overrideColorspace = 0xffffffff;
-	__u32 overrideYCbCrEnc = 0xffffffff;
-	__u32 overrideHSVEnc = 0xffffffff;
-	__u32 overrideXferFunc = 0xffffffff;
-	__u32 overrideQuantization = 0xffffffff;
 	bool force_opengl = false;
 	bool force_opengles = false;
 
@@ -226,31 +131,8 @@ int main(int argc, char **argv)
 		if (isOptArg(args[i], "--device", "-d")) {
 			if (!processOption(args, i, video_device))
 				return 0;
-		} else if (isOptArg(args[i], "--colorspace", "-C")) {
-			if (!processOption(args, i, s))
-				return 0;
-			overrideColorspace = parse_colorspace(s);
-		} else if (isOptArg(args[i], "--ycbcr-enc", "-Y")) {
-			if (!processOption(args, i, s))
-				return 0;
-			overrideYCbCrEnc = parse_ycbcr(s);
-		} else if (isOptArg(args[i], "--hsv-enc", "-H")) {
-			if (!processOption(args, i, s))
-				return 0;
-			overrideHSVEnc = parse_hsv(s);
-		} else if (isOptArg(args[i], "--xfer-func", "-X")) {
-			if (!processOption(args, i, s))
-				return 0;
-			overrideXferFunc = parse_xfer_func(s);
-		} else if (isOptArg(args[i], "--quant", "-Q")) {
-			if (!processOption(args, i, s))
-				return 0;
-			overrideQuantization = parse_quantization(s);
 		} else if (isOption(args[i], "--help", "-h")) {
 			usage();
-			info_option = true;
-		} else if (isOption(args[i], "--list-formats", "-l")) {
-			list_formats();
 			info_option = true;
 		} else if (isOption(args[i], "--timings", "-t")) {
 			report_timings = true;
@@ -316,11 +198,6 @@ int main(int argc, char **argv)
 	win.setModeV4L2(&fd);
 	win.setFormat(format);
 	win.setReportTimings(report_timings);
-	win.setOverrideColorspace(overrideColorspace);
-	win.setOverrideYCbCrEnc(overrideYCbCrEnc);
-	win.setOverrideHSVEnc(overrideHSVEnc);
-	win.setOverrideXferFunc(overrideXferFunc);
-	win.setOverrideQuantization(overrideQuantization);
 	while (!win.setV4LFormat(fmt)) {
 		fprintf(stderr, "Unsupported format: '%s' %s\n",
 			fcc2s(fmt.g_pixelformat()).c_str(),

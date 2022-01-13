@@ -42,11 +42,6 @@ public:
 	bool updateV4LFormat(const cv4l_fmt &fmt);
 	void setReportTimings(bool report) { m_reportTimings = report; }
 	void setVerbose(bool verbose) { m_verbose = verbose; }
-	void setOverrideColorspace(__u32 colsp) { m_overrideColorspace = colsp; }
-	void setOverrideYCbCrEnc(__u32 ycbcr) { m_overrideYCbCrEnc = ycbcr; }
-	void setOverrideHSVEnc(__u32 hsv) { m_overrideHSVEnc = hsv; }
-	void setOverrideXferFunc(__u32 xfer_func) { m_overrideXferFunc = xfer_func; }
-	void setOverrideQuantization(__u32 quant) { m_overrideQuantization = quant; }
 
 	__u32 getColorspace() { return m_overrideColorspace; }
 	__u32 getYcbcrEnc() { return m_overrideYCbCrEnc; }
