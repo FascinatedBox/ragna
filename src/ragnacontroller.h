@@ -11,8 +11,9 @@ class RagnaController : public QObject
     Q_OBJECT
 
 public:
-    RagnaController(CaptureWin *, QScrollArea *);
+    RagnaController() {};
 
+    void setCapture(CaptureWin *, QScrollArea *);
     void start();
 
 private slots:

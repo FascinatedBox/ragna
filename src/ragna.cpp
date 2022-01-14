@@ -163,6 +163,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s is not a video capture device\n", video_device.toUtf8().data());
 		std::exit(EXIT_FAILURE);
 	}
+
+	RagnaController rc;
+
 	fd.g_fmt(fmt);
 
 	{
@@ -213,6 +216,8 @@ int main(int argc, char **argv)
 	sa->resize(QSize(fmt.g_width(), fmt.g_frame_height()));
 	sa->setWidgetResizable(true);
 
+	rc.setCapture(&win, sa);
+
 	cv4l_queue q(fd.g_type(), V4L2_MEMORY_MMAP);
 	q.reqbufs(&fd, v4l2_bufs);
 	q.obtain_bufs(&fd);
@@ -222,8 +227,6 @@ int main(int argc, char **argv)
 		fputs("Error initializing the stream. Stopping.\n", stderr);
 		std::exit(EXIT_FAILURE);
 	}
-
-	RagnaController rc(&win, sa);
 
 	disp.setStyleSheet(loadFile(":/style.css"));
 

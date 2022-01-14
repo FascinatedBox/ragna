@@ -2,16 +2,16 @@
 #include "ragnacontroller.h"
 #include "v4l2-info.h"
 
-RagnaController::RagnaController(CaptureWin *win, QScrollArea *sa)
-    : m_captureWin(win),
-      m_captureArea(sa)
-{
-    m_configWindow = new RagnaConfigWindow(win);
-}
-
 void RagnaController::onShowConfigWindow()
 {
     m_configWindow->show();
+}
+
+void RagnaController::setCapture(CaptureWin *win, QScrollArea *sa)
+{
+    m_captureWin = win;
+    m_captureArea = sa;
+    m_configWindow = new RagnaConfigWindow(win);
 }
 
 void RagnaController::start()
