@@ -206,17 +206,9 @@ int main(int argc, char **argv)
 			pixfmt2s(fmt.g_pixelformat()).c_str());
 		std::exit(EXIT_FAILURE);
 	}
-	win.setMinimumSize(16, 16);
-	win.setSizeIncrement(2, 2);
-	win.setFocusPolicy(Qt::StrongFocus);
-
-	sa->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-	sa->setWidget(win.window());
-	sa->setFrameShape(QFrame::NoFrame);
-	sa->resize(QSize(fmt.g_width(), fmt.g_frame_height()));
-	sa->setWidgetResizable(true);
 
 	rc.setCapture(&win, sa);
+	sa->resize(QSize(fmt.g_width(), fmt.g_frame_height()));
 
 	cv4l_queue q(fd.g_type(), V4L2_MEMORY_MMAP);
 	q.reqbufs(&fd, v4l2_bufs);
