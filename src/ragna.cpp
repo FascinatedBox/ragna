@@ -15,7 +15,6 @@ static void usage()
 	       "Options:\n\n"
 	       "  -d, --device=<dev>       use device <dev> as the video device\n"
 	       "                           if <dev> is a number, then /dev/video<dev> is used\n"
-	       "                           If not specified, /dev/video0 is used.\n"
 	       "\n"
 	       "  If -d is not specified, then use /dev/video0.\n"
 	       "\n"
