@@ -39,7 +39,6 @@ public:
 	void setModeV4L2(cv4l_fd *fd);
 	void setQueue(cv4l_queue *q);
 	bool setV4LFormat(cv4l_fmt &fmt);
-	bool updateV4LFormat(const cv4l_fmt &fmt);
 	void setReportTimings(bool report) { m_reportTimings = report; }
 	void setVerbose(bool verbose) { m_verbose = verbose; }
 
@@ -66,6 +65,7 @@ private slots:
 	void toggleFullScreen(bool b = false);
 
 private:
+	bool updateV4LFormat(const cv4l_fmt &fmt);
 	void resizeEvent(QResizeEvent *event);
 	void focusInEvent(QFocusEvent *event);
 	void focusOutEvent(QFocusEvent *event);
