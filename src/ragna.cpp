@@ -164,9 +164,13 @@ int main(int argc, char **argv)
 		std::exit(EXIT_FAILURE);
 	}
 
+	fd.g_fmt(fmt);
+
 	RagnaController rc;
 
-	fd.g_fmt(fmt);
+	rc.loadPrefs();
+	rc.updateFormatForPrefs(&fmt);
+	fd.s_fmt(fmt);
 
 	{
 		bool found = false;

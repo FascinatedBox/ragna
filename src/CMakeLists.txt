@@ -13,6 +13,7 @@ add_executable(
         ragnaconfigcombobox.cpp
         ragnaconfigwindow.cpp
         ragnacontroller.cpp
+        ragnaprefs.cpp
         v4l-common/codec-fwht.c
         v4l-common/codec-v4l2-fwht.c
         v4l-common/v4l2-info.cpp

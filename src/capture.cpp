@@ -197,6 +197,7 @@ CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 
 CaptureWin::~CaptureWin()
 {
+	emit closing();
 	makeCurrent();
 	delete m_program;
 }

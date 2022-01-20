@@ -42,12 +42,15 @@ public:
 	void setReportTimings(bool report) { m_reportTimings = report; }
 	void setVerbose(bool verbose) { m_verbose = verbose; }
 
+	cv4l_fmt getFmt() { return m_v4l_fmt; }
+
 	__u32 getColorspace() { return m_overrideColorspace; }
 	__u32 getYcbcrEnc() { return m_overrideYCbCrEnc; }
 	__u32 getXferFunc() { return m_overrideXferFunc; }
 	__u32 getQuantization() { return m_overrideQuantization; }
 
 signals:
+	void closing();
 	void showConfigWindow();
 
 public slots:
