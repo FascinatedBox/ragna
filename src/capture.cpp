@@ -269,28 +269,24 @@ void CaptureWin::restoreAll(bool checked)
 void CaptureWin::updateColorspace(int data)
 {
 	m_overrideColorspace = data;
-	printf("New Colorspace: %s\n", colorspace2s(m_overrideColorspace).c_str());
 	updateShader();
 }
 
 void CaptureWin::updateYcbcrEnc(int data)
 {
 	m_overrideYCbCrEnc = data;
-	printf("New Y'CbCr Encoding: %s\n", ycbcr_enc2s(m_overrideYCbCrEnc).c_str());
 	updateShader();
 }
 
 void CaptureWin::updateXferFunc(int data)
 {
 	m_overrideXferFunc = data;
-	printf("New Transfer Function: %s\n", xfer_func2s(m_overrideXferFunc).c_str());
 	updateShader();
 }
 
 void CaptureWin::updateQuantization(int data)
 {
 	m_overrideQuantization = data;
-	printf("New Quantization Range: %s\n", quantization2s(m_overrideQuantization).c_str());
 	updateShader();
 }
 
