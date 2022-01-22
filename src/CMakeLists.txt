@@ -1,5 +1,3 @@
-set(MOCUIC_DIR ${CMAKE_CURRENT_BINARY_DIR}/.mocuic)
-
 qt5_add_resources(
     RCC_SOURCES
     ragna.qrc
