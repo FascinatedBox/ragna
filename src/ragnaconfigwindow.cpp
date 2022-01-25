@@ -7,6 +7,15 @@
 #include "ragnaconfigwindow.h"
 #include "v4l2-info.h"
 
+#define ADD_SECTION_ITEM(name) \
+{ \
+    QListWidgetItem *item = new QListWidgetItem(); \
+ \
+    item->setText(#name); \
+    stack->addWidget(create##name##Section()); \
+    configListWidget->addItem(item); \
+}
+
 RagnaConfigWindow::RagnaConfigWindow(CaptureWin *win)
     : m_captureWin(win)
 {
@@ -15,11 +24,9 @@ RagnaConfigWindow::RagnaConfigWindow(CaptureWin *win)
     QListWidgetItem *item = new QListWidgetItem;
     QStackedWidget *stack = new QStackedWidget;
 
-    item->setText("Color");
-    stack->addWidget(createColorSection());
-    configListWidget->addItem(item);
+    ADD_SECTION_ITEM(Color)
 
-    configListWidget->setCurrentItem(item);
+    configListWidget->setCurrentRow(0);
 
     layout->addWidget(configListWidget, 0, 0);
     layout->addWidget(stack, 0, 1);
