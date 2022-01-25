@@ -216,10 +216,9 @@ void CaptureWin::paintGL()
 	static unsigned cnt;
 	GLuint query;
 	QSize s = m_viewSize;
-	bool scale = m_scrollArea->widgetResizable();
 
-	glViewport(scale ? (size().width() - s.width()) / 2 : 0,
-		   scale ? (size().height() - s.height()) / 2 : 0,
+	glViewport((size().width() - s.width()) / 2,
+		   (size().height() - s.height()) / 2,
 		   s.width(), s.height());
 
 	if (m_reportTimings) {
