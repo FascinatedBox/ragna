@@ -6,5 +6,4 @@ cmake_install.cmake
 install_manifest.txt
 ragna
 src/qrc_ragna.cpp
-src/ragna.qrc
 src/ragna.qrc.depends
