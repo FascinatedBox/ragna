@@ -346,9 +346,6 @@ void CaptureWin::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_F:
 		toggleFullScreen();
 		return;
-	case Qt::Key_Q:
-		QApplication::quit();
-		return;
 	default:
 		QOpenGLWidget::keyPressEvent(event);
 		return;
