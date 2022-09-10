@@ -76,7 +76,6 @@ private:
 	void initializeGL();
 	void contextMenuEvent(QContextMenuEvent *event);
 	void keyPressEvent(QKeyEvent *event);
-	void mouseDoubleClickEvent(QMouseEvent * e);
 	void showCurrentOverrides();
 
 	bool supportedFmt(__u32 fmt);

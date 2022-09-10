@@ -326,14 +326,6 @@ void CaptureWin::contextMenuEvent(QContextMenuEvent *event)
 	menu.exec(event->globalPos());
 }
 
-void CaptureWin::mouseDoubleClickEvent(QMouseEvent * e)
-{
-	if (e->button() != Qt::LeftButton)
-		return;
-
-	toggleFullScreen();
-}
-
 void CaptureWin::keyPressEvent(QKeyEvent *event)
 {
 	switch (event->key()) {
