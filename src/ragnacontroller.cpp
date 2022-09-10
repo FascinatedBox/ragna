@@ -11,6 +11,8 @@
 void RagnaController::onShowConfigWindow()
 {
     m_configWindow->show();
+    m_configWindow->raise();
+    m_configWindow->activateWindow();
 }
 
 void RagnaController::readPrefs(QJsonObject o)
