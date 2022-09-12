@@ -8,6 +8,11 @@
 #define RAGNA_DIR ".config/ragna/"
 #define RAGNA_JSON_PATH (QDir::homePath() + ("/" RAGNA_DIR "ragna.json"))
 
+RagnaController::RagnaController()
+{
+    m_prefs = new RagnaPrefs();
+}
+
 void RagnaController::onShowConfigWindow()
 {
     m_configWindow->show();
@@ -17,32 +22,32 @@ void RagnaController::onShowConfigWindow()
 
 void RagnaController::readPrefs(QJsonObject o)
 {
-    m_prefs.read_colorspace(o["colorspace"].toString().toLower());
-    m_prefs.read_quantization(o["quantization"].toString().toLower());
-    m_prefs.read_xfer_func(o["xfer_func"].toString().toLower());
-    m_prefs.read_ycbcr(o["ycbcr"].toString().toLower());
+    m_prefs->read_colorspace(o["colorspace"].toString().toLower());
+    m_prefs->read_quantization(o["quantization"].toString().toLower());
+    m_prefs->read_xfer_func(o["xfer_func"].toString().toLower());
+    m_prefs->read_ycbcr(o["ycbcr"].toString().toLower());
 }
 
 void RagnaController::savePrefs(QJsonObject &o)
 {
-    m_captureWin->saveToPrefs(&m_prefs);
+    m_captureWin->saveToPrefs(m_prefs);
 
-    o["colorspace"] = RagnaPrefs::colorspace2s(m_prefs.colorspace);
-    o["quantization"] = RagnaPrefs::quantization2s(m_prefs.quantization);
-    o["xfer_func"] = RagnaPrefs::xfer_func2s(m_prefs.xfer_func);
-    o["ycbcr"] = RagnaPrefs::ycbcr2s(m_prefs.ycbcr_enc);
+    o["colorspace"] = RagnaPrefs::colorspace2s(m_prefs->colorspace);
+    o["quantization"] = RagnaPrefs::quantization2s(m_prefs->quantization);
+    o["xfer_func"] = RagnaPrefs::xfer_func2s(m_prefs->xfer_func);
+    o["ycbcr"] = RagnaPrefs::ycbcr2s(m_prefs->ycbcr_enc);
 }
 
 void RagnaController::updateFormatForPrefs(cv4l_fmt *fmt)
 {
-    if (m_prefs.colorspace != V4L2_COLORSPACE_DEFAULT)
-        fmt->s_colorspace(m_prefs.colorspace);
-    if (m_prefs.quantization != V4L2_QUANTIZATION_DEFAULT)
-        fmt->s_quantization(m_prefs.quantization);
-    if (m_prefs.xfer_func != V4L2_XFER_FUNC_DEFAULT)
-        fmt->s_xfer_func(m_prefs.colorspace);
-    if (m_prefs.ycbcr_enc != V4L2_YCBCR_ENC_DEFAULT)
-        fmt->s_ycbcr_enc(m_prefs.ycbcr_enc);
+    if (m_prefs->colorspace != V4L2_COLORSPACE_DEFAULT)
+        fmt->s_colorspace(m_prefs->colorspace);
+    if (m_prefs->quantization != V4L2_QUANTIZATION_DEFAULT)
+        fmt->s_quantization(m_prefs->quantization);
+    if (m_prefs->xfer_func != V4L2_XFER_FUNC_DEFAULT)
+        fmt->s_xfer_func(m_prefs->colorspace);
+    if (m_prefs->ycbcr_enc != V4L2_YCBCR_ENC_DEFAULT)
+        fmt->s_ycbcr_enc(m_prefs->ycbcr_enc);
 
     m_v4l_fmt = fmt;
 }
@@ -88,7 +93,7 @@ void RagnaController::setCapture(CaptureWin *win, RagnaScrollArea *rsa)
 {
     m_captureWin = win;
     m_captureArea = rsa;
-    win->loadFromPrefs(&m_prefs);
+    win->loadFromPrefs(m_prefs);
 
     m_configWindow = new RagnaConfigWindow(win);
 

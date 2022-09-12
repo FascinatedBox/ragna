@@ -13,9 +13,8 @@ class RagnaConfigWindow;
 class RagnaController : public QObject
 {
     Q_OBJECT
-
 public:
-    RagnaController() {};
+    RagnaController();
 
     void loadPrefs();
     void setCapture(CaptureWin *, RagnaScrollArea *);
@@ -34,7 +33,7 @@ private:
     CaptureWin *m_captureWin;
     RagnaScrollArea *m_captureArea;
     cv4l_fmt *m_v4l_fmt;
-    RagnaPrefs m_prefs;
+    RagnaPrefs *m_prefs;
 };
 
 #endif
