@@ -1,6 +1,7 @@
 #ifndef RAGNACONFIGWINDOW_H
 # define RAGNACONFIGWINDOW_H
 # include <QDialog>
+# include <QStackedWidget>
 
 # include "capture.h"
 
@@ -13,6 +14,9 @@ class RagnaConfigWindow : public QDialog
 public:
     RagnaConfigWindow(CaptureWin *);
 
+private slots:
+    void onListRowChanged(int);
+
 private:
     RagnaConfigComboBox *newConfigComboBox(
         const __u32 *,
@@ -22,6 +26,7 @@ private:
     QWidget *createColorSection();
 
     CaptureWin *m_captureWin;
+    QStackedWidget *m_stack;
 };
 
 #endif

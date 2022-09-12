@@ -12,7 +12,7 @@
     QListWidgetItem *item = new QListWidgetItem(); \
  \
     item->setText(#name); \
-    stack->addWidget(create##name##Section()); \
+    m_stack->addWidget(create##name##Section()); \
     configListWidget->addItem(item); \
 }
 
@@ -22,14 +22,17 @@ RagnaConfigWindow::RagnaConfigWindow(CaptureWin *win)
     QGridLayout *layout = new QGridLayout;
     QListWidget *configListWidget = new QListWidget;
     QListWidgetItem *item = new QListWidgetItem;
-    QStackedWidget *stack = new QStackedWidget;
+    m_stack = new QStackedWidget;
 
     ADD_SECTION_ITEM(Color)
 
     configListWidget->setCurrentRow(0);
 
     layout->addWidget(configListWidget, 0, 0);
-    layout->addWidget(stack, 0, 1);
+    layout->addWidget(m_stack, 0, 1);
+
+    connect(configListWidget, &QListWidget::currentRowChanged,
+            this, &RagnaConfigWindow::onListRowChanged);
 
     setObjectName("configWindow");
     setLayout(layout);
@@ -84,4 +87,9 @@ QWidget *RagnaConfigWindow::createColorSection()
     w->setLayout(layout);
 
     return w;
+}
+
+void RagnaConfigWindow::onListRowChanged(int row)
+{
+    m_stack->setCurrentIndex(row);
 }
