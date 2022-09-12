@@ -63,6 +63,8 @@ void RagnaController::loadPrefs()
 
 void RagnaController::onCaptureClosing()
 {
+    m_configWindow->close();
+
     QFile f(RAGNA_JSON_PATH);
     QJsonObject o;
 
