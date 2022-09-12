@@ -35,7 +35,6 @@ class CaptureWin : public QOpenGLWidget, protected QOpenGLFunctions
 	Q_OBJECT
 public:
 	explicit CaptureWin(QScrollArea *sa, QWidget *parent = 0);
-	~CaptureWin();
 
 	void setModeV4L2(cv4l_fd *fd);
 	void setQueue(cv4l_queue *q);
@@ -51,7 +50,6 @@ public:
 	__u32 getQuantization() { return m_overrideQuantization; }
 
 signals:
-	void closing();
 	void showConfigWindow();
 
 public slots:

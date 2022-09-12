@@ -82,10 +82,10 @@ void RagnaController::onCaptureClosing()
     f.close();
 }
 
-void RagnaController::setCapture(CaptureWin *win, QScrollArea *sa)
+void RagnaController::setCapture(CaptureWin *win, RagnaScrollArea *rsa)
 {
     m_captureWin = win;
-    m_captureArea = sa;
+    m_captureArea = rsa;
     win->loadFromPrefs(&m_prefs);
 
     m_configWindow = new RagnaConfigWindow(win);
@@ -94,10 +94,10 @@ void RagnaController::setCapture(CaptureWin *win, QScrollArea *sa)
     win->setSizeIncrement(2, 2);
     win->setFocusPolicy(Qt::StrongFocus);
 
-    sa->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-    sa->setWidget(win->window());
-    sa->setFrameShape(QFrame::NoFrame);
-    sa->setWidgetResizable(true);
+    rsa->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+    rsa->setWidget(win->window());
+    rsa->setFrameShape(QFrame::NoFrame);
+    rsa->setWidgetResizable(true);
 }
 
 void RagnaController::start()
@@ -105,7 +105,7 @@ void RagnaController::start()
     connect(m_captureWin, &CaptureWin::showConfigWindow,
             this, &RagnaController::onShowConfigWindow);
 
-    connect(m_captureWin, &CaptureWin::closing,
+    connect(m_captureArea, &RagnaScrollArea::closing,
             this, &RagnaController::onCaptureClosing);
 
     m_captureArea->show();

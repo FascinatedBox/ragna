@@ -5,6 +5,7 @@
 
 # include "capture.h"
 # include "ragnaprefs.h"
+# include "ragnascrollarea.h"
 # include "cv4l-helpers.h"
 
 class RagnaConfigWindow;
@@ -17,7 +18,7 @@ public:
     RagnaController() {};
 
     void loadPrefs();
-    void setCapture(CaptureWin *, QScrollArea *);
+    void setCapture(CaptureWin *, RagnaScrollArea *);
     void start();
     void updateFormatForPrefs(cv4l_fmt *);
 
@@ -31,7 +32,7 @@ private:
 
     RagnaConfigWindow *m_configWindow;
     CaptureWin *m_captureWin;
-    QScrollArea *m_captureArea;
+    RagnaScrollArea *m_captureArea;
     cv4l_fmt *m_v4l_fmt;
     RagnaPrefs m_prefs;
 };

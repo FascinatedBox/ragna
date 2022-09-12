@@ -109,7 +109,7 @@ QString loadFile(QString path)
 int main(int argc, char **argv)
 {
 	QApplication disp(argc, argv);
-	QScrollArea *sa = new QScrollArea; // Automatically freed on window close
+	RagnaScrollArea *rsa = new RagnaScrollArea();
 	QSurfaceFormat format;
 	QString video_device = "0";
 	QString filename;
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 	format.setVersion(3, 3);
 
 	QSurfaceFormat::setDefaultFormat(format);
-	CaptureWin win(sa);
+	CaptureWin win(rsa);
 	win.setVerbose(verbose);
 	win.setModeV4L2(&fd);
 	win.setFormat(format);
@@ -208,8 +208,8 @@ int main(int argc, char **argv)
 		std::exit(EXIT_FAILURE);
 	}
 
-	rc.setCapture(&win, sa);
-	sa->resize(QSize(fmt.g_width(), fmt.g_frame_height()));
+	rc.setCapture(&win, rsa);
+	rsa->resize(QSize(fmt.g_width(), fmt.g_frame_height()));
 
 	cv4l_queue q(fd.g_type(), V4L2_MEMORY_MMAP);
 	q.reqbufs(&fd, v4l2_bufs);

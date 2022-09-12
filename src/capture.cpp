@@ -196,13 +196,6 @@ CaptureWin::CaptureWin(QScrollArea *sa, QWidget *parent) :
 		this, SLOT(toggleFullScreen(bool)));
 }
 
-CaptureWin::~CaptureWin()
-{
-	emit closing();
-	makeCurrent();
-	delete m_program;
-}
-
 void CaptureWin::resizeEvent(QResizeEvent *event)
 {
 	QSize origSize = QSize(m_origWidth, m_origHeight);
