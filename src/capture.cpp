@@ -15,6 +15,7 @@
 
 #include "capture.h"
 #include "v4l2-info.h"
+#include "ragnaprefs.h"
 
 const __u32 formats[] = {
 	V4L2_PIX_FMT_YUYV,
@@ -694,4 +695,22 @@ void CaptureWin::updateOrigValues()
 	m_overrideXferFunc = m_origXferFunc;
 	m_overrideYCbCrEnc = m_origYCbCrEnc;
 	m_overrideQuantization = m_origQuantization;
+}
+
+void CaptureWin::loadFromPrefs(RagnaPrefs *prefs)
+{
+	m_overrideColorspace = prefs->colorspace;
+	m_overrideYCbCrEnc = prefs->xfer_func;
+	m_overrideXferFunc = prefs->ycbcr_enc;
+	m_overrideQuantization = prefs->quantization;
+
+	updateShader();
+}
+
+void CaptureWin::saveToPrefs(RagnaPrefs *prefs)
+{
+	prefs->colorspace = m_overrideColorspace;
+	prefs->xfer_func = m_overrideYCbCrEnc;
+	prefs->ycbcr_enc = m_overrideXferFunc;
+	prefs->quantization = m_overrideQuantization;
 }

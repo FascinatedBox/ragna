@@ -25,12 +25,12 @@ void RagnaController::readPrefs(QJsonObject o)
 
 void RagnaController::savePrefs(QJsonObject &o)
 {
-    cv4l_fmt fmt = m_captureWin->getFmt();
+    m_captureWin->saveToPrefs(&m_prefs);
 
-    o["colorspace"] = RagnaPrefs::colorspace2s(fmt.g_colorspace());
-    o["quantization"] = RagnaPrefs::quantization2s(fmt.g_quantization());
-    o["xfer_func"] = RagnaPrefs::xfer_func2s(fmt.g_xfer_func());
-    o["ycbcr"] = RagnaPrefs::ycbcr2s(fmt.g_ycbcr_enc());
+    o["colorspace"] = RagnaPrefs::colorspace2s(m_prefs.colorspace);
+    o["quantization"] = RagnaPrefs::quantization2s(m_prefs.quantization);
+    o["xfer_func"] = RagnaPrefs::xfer_func2s(m_prefs.xfer_func);
+    o["ycbcr"] = RagnaPrefs::ycbcr2s(m_prefs.ycbcr_enc);
 }
 
 void RagnaController::updateFormatForPrefs(cv4l_fmt *fmt)
@@ -86,11 +86,7 @@ void RagnaController::setCapture(CaptureWin *win, QScrollArea *sa)
 {
     m_captureWin = win;
     m_captureArea = sa;
-
-    win->updateColorspace(m_prefs.colorspace);
-    win->updateYcbcrEnc(m_prefs.ycbcr_enc);
-    win->updateXferFunc(m_prefs.xfer_func);
-    win->updateQuantization(m_prefs.quantization);
+    win->loadFromPrefs(&m_prefs);
 
     m_configWindow = new RagnaConfigWindow(win);
 

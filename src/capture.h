@@ -25,6 +25,7 @@ extern const __u32 hsv_encs[];
 extern const __u32 quantizations[];
 
 class QOpenGLPaintDevice;
+class RagnaPrefs;
 
 // This must be equal to the max number of textures that any shader uses
 #define MAX_TEXTURES_NEEDED 3
@@ -41,8 +42,8 @@ public:
 	bool setV4LFormat(cv4l_fmt &fmt);
 	void setReportTimings(bool report) { m_reportTimings = report; }
 	void setVerbose(bool verbose) { m_verbose = verbose; }
-
-	cv4l_fmt getFmt() { return m_v4l_fmt; }
+	void loadFromPrefs(RagnaPrefs *);
+	void saveToPrefs(RagnaPrefs *);
 
 	__u32 getColorspace() { return m_overrideColorspace; }
 	__u32 getYcbcrEnc() { return m_overrideYCbCrEnc; }
