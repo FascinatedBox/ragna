@@ -26,7 +26,7 @@ static void usage()
 	       "  -R, --raw                open device in raw mode\n"
 	       "\n"
 	       "  --opengl                 force openGL to display the video\n"
-	       "  --opengles               force openGL ES to display the video\n");
+	       "                           (default: openGL ES)\n");
 }
 
 static void usageError(const char *msg)
@@ -120,7 +120,6 @@ int main(int argc, char **argv)
 	bool report_timings = false;
 	bool verbose = false;
 	bool force_opengl = false;
-	bool force_opengles = false;
 
 	disp.setApplicationDisplayName("Ragna Viewer");
 	QStringList args = disp.arguments();
@@ -135,8 +134,6 @@ int main(int argc, char **argv)
 			info_option = true;
 		} else if (isOption(args[i], "--timings", "-t")) {
 			report_timings = true;
-		} else if (isOptArg(args[i], "--opengles")) {
-			force_opengles = true;
 		} else if (isOptArg(args[i], "--opengl")) {
 			force_opengl = true;
 		} else if (isOption(args[i], "--verbose", "-v")) {
@@ -191,10 +188,10 @@ int main(int argc, char **argv)
 
 	format.setDepthBufferSize(24);
 
-	if (force_opengles)
-		format.setRenderableType(QSurfaceFormat::OpenGLES);
-	else if (force_opengl)
+	if (force_opengl)
 		format.setRenderableType(QSurfaceFormat::OpenGL);
+	else
+		format.setRenderableType(QSurfaceFormat::OpenGLES);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	format.setVersion(3, 3);
 
