@@ -5,6 +5,7 @@
 #include <QStackedWidget>
 #include "ragnaconfigcombobox.h"
 #include "ragnaconfigwindow.h"
+#include "ragnaprefs.h"
 #include "v4l2-info.h"
 
 #define ADD_SECTION_ITEM(name) \
@@ -16,8 +17,9 @@
     configListWidget->addItem(item); \
 }
 
-RagnaConfigWindow::RagnaConfigWindow(CaptureWin *win)
-    : m_captureWin(win)
+RagnaConfigWindow::RagnaConfigWindow(CaptureWin *win, RagnaPrefs *prefs)
+    : m_captureWin(win),
+      m_prefs(prefs)
 {
     QGridLayout *layout = new QGridLayout;
     QListWidget *configListWidget = new QListWidget;
@@ -65,12 +67,12 @@ RagnaConfigComboBox *RagnaConfigWindow::newConfigComboBox(
 #define addConfigComboBoxRow(desc, fn, base_name) \
 RagnaConfigComboBox *base_name##ComboBox = \
     newConfigComboBox(base_name##s, \
-                      (int)m_captureWin->get##fn(), \
+                      m_prefs->base_name, \
                       base_name##2s); \
  \
 layout->addRow(desc, base_name##ComboBox); \
 connect(base_name##ComboBox, &RagnaConfigComboBox::valueChanged, \
-        m_captureWin, &CaptureWin::update##fn);
+        this, &RagnaConfigWindow::onUpdate##fn);
 
 QWidget *RagnaConfigWindow::createColorSection()
 {
@@ -92,4 +94,29 @@ QWidget *RagnaConfigWindow::createColorSection()
 void RagnaConfigWindow::onListRowChanged(int row)
 {
     m_stack->setCurrentIndex(row);
+}
+
+void RagnaConfigWindow::onUpdateColorspace(int data)
+{
+    m_prefs->colorspace = data;
+
+    m_captureWin->syncPrefsColor();
+}
+
+void RagnaConfigWindow::onUpdateQuantization(int data)
+{
+    m_prefs->quantization = data;
+    m_captureWin->syncPrefsColor();
+}
+
+void RagnaConfigWindow::onUpdateXferFunc(int data)
+{
+    m_prefs->xfer_func = data;
+    m_captureWin->syncPrefsColor();
+}
+
+void RagnaConfigWindow::onUpdateYcbcrEnc(int data)
+{
+    m_prefs->ycbcr_enc = data;
+    m_captureWin->syncPrefsColor();
 }

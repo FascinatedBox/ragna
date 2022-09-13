@@ -30,8 +30,6 @@ void RagnaController::readPrefs(QJsonObject o)
 
 void RagnaController::savePrefs(QJsonObject &o)
 {
-    m_captureWin->saveToPrefs(m_prefs);
-
     o["colorspace"] = RagnaPrefs::colorspace2s(m_prefs->colorspace);
     o["quantization"] = RagnaPrefs::quantization2s(m_prefs->quantization);
     o["xfer_func"] = RagnaPrefs::xfer_func2s(m_prefs->xfer_func);
@@ -95,7 +93,7 @@ void RagnaController::setCapture(CaptureWin *win, RagnaScrollArea *rsa)
     m_captureArea = rsa;
     win->loadFromPrefs(m_prefs);
 
-    m_configWindow = new RagnaConfigWindow(win);
+    m_configWindow = new RagnaConfigWindow(win, m_prefs);
 
     win->setMinimumSize(16, 16);
     win->setSizeIncrement(2, 2);

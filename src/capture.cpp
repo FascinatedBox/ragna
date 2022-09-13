@@ -261,27 +261,12 @@ void CaptureWin::restoreAll(bool checked)
 	restoreSize();
 }
 
-void CaptureWin::updateColorspace(int data)
+void CaptureWin::syncPrefsColor()
 {
-	m_overrideColorspace = data;
-	updateShader();
-}
-
-void CaptureWin::updateYcbcrEnc(int data)
-{
-	m_overrideYCbCrEnc = data;
-	updateShader();
-}
-
-void CaptureWin::updateXferFunc(int data)
-{
-	m_overrideXferFunc = data;
-	updateShader();
-}
-
-void CaptureWin::updateQuantization(int data)
-{
-	m_overrideQuantization = data;
+	m_overrideColorspace = m_prefs->colorspace;
+	m_overrideQuantization = m_prefs->quantization;
+	m_overrideXferFunc = m_prefs->xfer_func;
+	m_overrideYCbCrEnc = m_prefs->ycbcr_enc;
 	updateShader();
 }
 
@@ -692,6 +677,7 @@ void CaptureWin::updateOrigValues()
 
 void CaptureWin::loadFromPrefs(RagnaPrefs *prefs)
 {
+	m_prefs = prefs;
 	m_overrideColorspace = prefs->colorspace;
 	m_overrideQuantization = prefs->quantization;
 	m_overrideXferFunc = prefs->xfer_func;

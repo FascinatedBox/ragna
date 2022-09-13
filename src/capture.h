@@ -43,20 +43,10 @@ public:
 	void setVerbose(bool verbose) { m_verbose = verbose; }
 	void loadFromPrefs(RagnaPrefs *);
 	void saveToPrefs(RagnaPrefs *);
-
-	__u32 getColorspace() { return m_overrideColorspace; }
-	__u32 getYcbcrEnc() { return m_overrideYCbCrEnc; }
-	__u32 getXferFunc() { return m_overrideXferFunc; }
-	__u32 getQuantization() { return m_overrideQuantization; }
+	void syncPrefsColor();
 
 signals:
 	void showConfigWindow();
-
-public slots:
-	void updateColorspace(int);
-	void updateYcbcrEnc(int);
-	void updateXferFunc(int);
-	void updateQuantization(int);
 
 private slots:
 	void v4l2ReadEvent();
@@ -147,6 +137,7 @@ private:
 	QAction *m_resolutionOverride;
 	QAction *m_exitFullScreen;
 	QAction *m_enterFullScreen;
+	RagnaPrefs *m_prefs;
 };
 
 #endif

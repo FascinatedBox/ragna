@@ -6,16 +6,21 @@
 # include "capture.h"
 
 class RagnaConfigComboBox;
+class RagnaPrefs;
 
 class RagnaConfigWindow : public QDialog
 {
     Q_OBJECT
 
 public:
-    RagnaConfigWindow(CaptureWin *);
+    RagnaConfigWindow(CaptureWin *, RagnaPrefs *);
 
 private slots:
     void onListRowChanged(int);
+    void onUpdateColorspace(int);
+    void onUpdateYcbcrEnc(int);
+    void onUpdateXferFunc(int);
+    void onUpdateQuantization(int);
 
 private:
     RagnaConfigComboBox *newConfigComboBox(
@@ -26,6 +31,7 @@ private:
     QWidget *createColorSection();
 
     CaptureWin *m_captureWin;
+    RagnaPrefs *m_prefs;
     QStackedWidget *m_stack;
 };
 
