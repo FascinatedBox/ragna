@@ -693,9 +693,9 @@ void CaptureWin::updateOrigValues()
 void CaptureWin::loadFromPrefs(RagnaPrefs *prefs)
 {
 	m_overrideColorspace = prefs->colorspace;
-	m_overrideYCbCrEnc = prefs->xfer_func;
-	m_overrideXferFunc = prefs->ycbcr_enc;
 	m_overrideQuantization = prefs->quantization;
+	m_overrideXferFunc = prefs->xfer_func;
+	m_overrideYCbCrEnc = prefs->ycbcr_enc;
 
 	updateShader();
 }
@@ -703,7 +703,7 @@ void CaptureWin::loadFromPrefs(RagnaPrefs *prefs)
 void CaptureWin::saveToPrefs(RagnaPrefs *prefs)
 {
 	prefs->colorspace = m_overrideColorspace;
-	prefs->xfer_func = m_overrideYCbCrEnc;
-	prefs->ycbcr_enc = m_overrideXferFunc;
 	prefs->quantization = m_overrideQuantization;
+	prefs->xfer_func = m_overrideXferFunc;
+	prefs->ycbcr_enc = m_overrideYCbCrEnc;
 }
