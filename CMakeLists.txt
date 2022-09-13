@@ -8,6 +8,10 @@ if(POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
 endif()
 
+if(WITH_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3 -O0")
+endif()
+
 find_package(
     Qt5
     REQUIRED
