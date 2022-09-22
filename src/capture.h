@@ -14,6 +14,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <QScrollArea>
+#include <libv4l2.h>
 
 #include "cv4l-helpers.h"
 
