@@ -179,8 +179,25 @@ int main(int argc, char **argv)
 				break;
 			}
 		}
+
 		if (!found) {
-			fprintf(stderr, "Device has invalid/unknown format: '%s' %s\n",
+			/* Try fixing it to one that's known to work. */
+			__u32 overridePixelFormat = V4L2_PIX_FMT_RGB24;
+
+			fmt.s_pixelformat(V4L2_PIX_FMT_RGB24);
+			fd.s_fmt(fmt);
+			fd.g_fmt(fmt);
+
+			if (fmt.g_pixelformat() != overridePixelFormat)
+				fprintf(stderr, "Not able to override format to %s (%s)\n",
+					fcc2s(overridePixelFormat).c_str(),
+					pixfmt2s(overridePixelFormat).c_str());
+			else
+				found = true;
+		}
+
+		if (!found) {
+			fprintf(stderr, "Unknown/invalid device format %s (%s)\n",
 				fcc2s(pf).c_str(), pixfmt2s(pf).c_str());
 			std::exit(EXIT_FAILURE);
 		}
