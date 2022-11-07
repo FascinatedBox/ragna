@@ -4,6 +4,6 @@ CMakeFiles/
 Makefile
 cmake_install.cmake
 install_manifest.txt
+qrc_ragna.cpp
 ragna
-src/qrc_ragna.cpp
-src/ragna.qrc.depends
+ragna.qrc.depends
