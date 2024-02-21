@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 		std::exit(EXIT_FAILURE);
 	}
 
-	disp.setStyleSheet(loadFile(":/ragna.qss"));
+	disp.setStyleSheet(loadFile(":/style.qss"));
 
 	rc.start();
 

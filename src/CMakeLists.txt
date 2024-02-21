@@ -1,6 +1,6 @@
 qt5_add_resources(
     RCC_SOURCES
-    resources/ragna.qrc
+    resources.qrc
 )
 
 add_executable(

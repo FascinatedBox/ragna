@@ -1,6 +1,6 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource>
-        <file>ragna.qss</file>
+        <file>style.qss</file>
     </qresource>
 </RCC>
