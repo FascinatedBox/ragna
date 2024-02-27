@@ -5,5 +5,5 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 ragna
-src/qrc_resources.cpp
+qrc_resources.cpp
 src/resources.qrc.depends
