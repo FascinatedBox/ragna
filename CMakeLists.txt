@@ -1,5 +1,5 @@
-project(ragna)
 cmake_minimum_required(VERSION 3.5.0)
+project(ragna)
 
 if(POLICY CMP0072)
     # Prefer newer GL libraries for OpenGL.
@@ -8,8 +8,10 @@ endif()
 
 include(FindPkgConfig)
 find_package(
-    Qt5
+    Qt6
     COMPONENTS
+        OpenGL
+        OpenGLWidgets
         Widgets
     REQUIRED
 )
@@ -21,17 +23,11 @@ pkg_check_modules(
 )
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
 set(MOCUIC_DIR ${CMAKE_CURRENT_BINARY_DIR}/.mocuic)
 
 if(WITH_DEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0")
 endif()
-
-qt5_add_resources(
-    RCC_SOURCES
-        src/resources.qrc
-)
 
 add_executable(
     ragna
@@ -68,7 +64,9 @@ target_include_directories(
 target_link_libraries(
     ragna
         OpenGL
-        Qt5::Widgets
+        Qt6::OpenGL
+        Qt6::OpenGLWidgets
+        Qt6::Widgets
         v4l2
 )
 

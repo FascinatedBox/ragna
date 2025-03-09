@@ -1,4 +1,5 @@
 .mocuic/
+.qt/
 CMakeCache.txt
 CMakeFiles/
 Makefile

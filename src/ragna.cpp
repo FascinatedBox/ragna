@@ -96,16 +96,6 @@ static bool isOption(const QString &opt, const char *longOpt, const char *shortO
 	return opt == longOpt || opt == shortOpt;
 }
 
-QString loadFile(QString path)
-{
-    QFile f(path);
-    f.open(QIODevice::ReadOnly);
-    QString s = f.readAll();
-    f.close();
-
-    return s;
-}
-
 int main(int argc, char **argv)
 {
 	QApplication disp(argc, argv);
@@ -237,8 +227,6 @@ int main(int argc, char **argv)
 		fputs("Error initializing the stream. Stopping.\n", stderr);
 		std::exit(EXIT_FAILURE);
 	}
-
-	disp.setStyleSheet(loadFile(":/style.qss"));
 
 	rc.start();
 
